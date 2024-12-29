@@ -1,0 +1,1887 @@
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Warning[205]: Found directive in column 1. (LIST)
+                      00001 LIST      p=16F877A ; Define el microcontrolador
+Warning[205]: Found directive in column 1. (INCLUDE)
+                      00002 INCLUDE   <p16F877A.inc> ; Incluye la librerÌa del PIC16F877A
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F877A processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2010 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      00555         LIST
+                      00003 
+Warning[205]: Found directive in column 1. (__CONFIG)
+2007   3F31           00004 __CONFIG  _XT_OSC & _WDT_OFF & _PWRTE_ON & _BODEN_OFF & _LVP_OFF ; ConfiguraciÛn de fusibles
+                      00005      
+                      00006      CBLOCK 0x20        
+  00000020            00007                 Retardoini                      ; retardo inicial
+  00000021            00008                 TEMPL                           ;Registro bajo de temperatura
+  00000022            00009                 TEMPH                           ;Registro alto de temperatura
+  00000023            00010                 HUMH                            ;Registro alto de humedad
+  00000024            00011                 HUML                            ;Registro bajo de humedad
+                      00012                 ;MULTH                          ;Resultado de 8 bits de la multiplicacion       - ALTO
+                      00013                 ;MULTL                          ;Resultado de 8 bits de la multiplicacion       - BAJO
+  00000025            00014                 TEMPFL                          ;Registro FINAL bajo de temperatura
+  00000026            00015                 TEMPFH                          ;Registro FINAL alto de temperatura
+  00000027            00016                 HUMFH                           ;Registro FINAL alto de humedad
+  00000028            00017                 HUMFL                           ;Registro FINAL bajo de humedad
+  00000029            00018                 Auxiliar
+                      00019      ENDC                                                       ;Se crean distintas variables para evita
+                            r confusiones y sobrescrituras incorrectas
+                      00020                                                                         ;- - - - - - A MEJORAR  - - - - 
+                            - - ;
+                      00021 ;-----------------------------------;Variables temporales y de uso com˙n
+                      00022 ;LCD = PORTD para datos - PORTE para RW, RS y E.
+                      00023 ;ADC PORTA - Usaremos AN0 para el LM35.
+                      00024 ;ADC PORTA - Usaremos AN1 para el HW-080
+                      00025 ;Ocuparemos solamente TEMPL; esto ya que no encontraremos temperaturas mayores a 120 grados celcius
+                      00026         ;Este es un registro de 8 bits el cual deberemos de multiplicar por 100.
+                      00027 ;Para el sensor de humedad parece que tambien se multiplica por 100; por lo que sera le mismo procedimie
+                            nto.
+0000                  00028         org 0x00                                
+0000   2108           00029         call LCD_Inicializa             ;Iniciamos el LCD
+0001   2087           00030         call LIMPIA_REG                 ;Limpieza en cada ciclado
+0002                  00031 INICIO                                          ;configurar ADC
+0002   1683           00032         bsf STATUS,RP0                  ;seleccione Banco 1
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0003   1405           00033     bsf TRISA,0                         ;Activamos AN0 - Sensor Temperatura 
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0004   1485           00034         bsf TRISA,1                             ;Activamos AN1 - Sensor Humedad
+0005   3082           00035         movlw   b'10000010'             ;Just.Der, Fosc/8, D=AN7,6,5 AD=AN4,3,2,1,0
+                      00036                                                         ;ADFM/ADCS2/0/0/PCFG3/PCFG2/PCFG1/PCFG0
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0006   009F           00037         movwf   ADCON1                  ;registro 1 de configuraciÚn A/D 
+                      00038         
+0007   1283           00039     bcf     STATUS,RP0          ;seleccione Banco 0
+                      00040 ;-----------------------------------;Se configura ADCON1
+0008   3040           00041         movlw   b'01000000'             ;Fosc/8, Canal AN0, GO_Done, 0, AD_ON OFF
+                      00042                                                         ;ADCS1/ADCS0/CHS2/CHS1/CHS0/GO_DONE/0/ADON
+0009   009F           00043         movwf   ADCON0                  ;registro 0 de configuraciÚn A/D
+000A   141F           00044         bsf             ADCON0,ADON             ;enciende el ADC
+                      00045         
+                      00046                                                         ;hacer retardo inicial de Tacq
+                      00047                                                         ;retardo de tiempo de adquisicion de al menos 19
+                            .72 us
+                      00048                                                         ;20us (Tcy=1us, a 4MHz) son 20*Tcy de espera
+                      00049 ;-----------------------------------;Se configura el ADCON0
+000B   2082           00050         call RETARDO_CARGA
+                      00051 ;-----------------------------------;Retardo de carga para el circuito interno RC
+000C                  00052 CONVERSION
+                      00053 ;-----------------------------------;Punto de ciclaje
+000C   1283           00054         bcf STATUS,RP0
+000D   119F           00055         bcf ADCON0,3
+                      00056 ;-----------------------------------;Cambio de canal al AN0 al momento de ciclar
+000E                  00057 GUARDAR_TEMP
+000E   2082           00058         call RETARDO_CARGA
+000F   2061           00059         call CONVERSION_ADC                             ;Iniciamos la conversion ADC en el canal AN0
+0010   081E           00060         movf ADRESH, 0
+0011   00A2           00061         movwf TEMPH
+                      00062 ;-----------------------------------;Guardamos la parte alta de la muestra - Temperatura
+0012   1683           00063         bsf STATUS, RP0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0013   081E           00064         movf ADRESL, 0
+0014   1283           00065         bcf STATUS, RP0
+0015   00A1           00066         movwf TEMPL     
+0016   2041           00067         call CALCULO_TEMP                               ;Calculamos el valor de la temperatura
+                      00068 ;-----------------------------------;Termina de leer el LM35 y ahora lee el HW-080
+0017   1283           00069         bcf STATUS,RP0
+0018   159F           00070         bsf ADCON0,3
+                      00071 ;-----------------------------------;Cambio de canal de AN0 a AN1
+0019                  00072 GUARDAR_HUM     
+0019   2082           00073         call RETARDO_CARGA
+001A   2061           00074         call CONVERSION_ADC                             ;Iniciamos la conversion ADC en el canal AN1
+001B   081E           00075         movf ADRESH, 0
+001C   00A3           00076         movwf HUMH
+                      00077 ;-----------------------------------;Guardamos la parte alta de la muestra - Humedad
+001D   1683           00078         bsf STATUS, RP0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+001E   081E           00079         movf ADRESL, 0
+001F   1283           00080         bcf STATUS, RP0
+0020   00A4           00081         movwf HUML
+0021   204C           00082         call CALCULO_HUM
+Warning[203]: Found opcode in column 1. (goto)
+0022   2823           00083 goto VISUALIZAR_DATOS
+                      00084 ;-----------------------------------;Guardamos la parte baja de la muestra - Humedad
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0023                  00085 VISUALIZAR_DATOS
+0023   214C           00086         call LCD_Borra
+0024   3066           00087         movlw M0
+0025   20E0           00088         call LCD_Mensaje
+0026   2173           00089         call LCD_UnEspacioBlanco                        ;Temperatura: 
+0027   0826           00090         movf TEMPFH,W                                           ;Ahora se visualiza en decimal.
+0028   20CD           00091         call BIN_a_BCD                                          ;Primero se convierte a BCD.
+0029   00A9           00092         movwf Auxiliar                                          ;Guarda las decenas y unidades.
+002A   0841           00093         movf BCD_Centenas,W                                     ;Visualiza centenas.
+002B   2189           00094         call LCD_Nibble                                         
+002C   0829           00095         movf Auxiliar,W                                         ;Visualiza las decenas y unidades.
+002D   2185           00096         call LCD_ByteCompleto                           
+002E   2173           00097         Call LCD_UnEspacioBlanco
+002F   307E           00098         movlw M2
+0030   20E0           00099         call LCD_Mensaje
+                      00100 
+                      00101         
+0031   213C           00102         call LCD_Linea2
+0032   3074           00103         movlw M1
+0033   20E0           00104         call LCD_Mensaje
+0034   2173           00105         call LCD_UnEspacioBlanco                        ;Humedad: 
+0035   0827           00106         movf HUMFH,W                                            ;Ahora se visualiza en decimal.
+0036   20CD           00107         call BIN_a_BCD                                          ;Primero se convierte a BCD.
+0037   00A9           00108         movwf Auxiliar                                          ;Guarda las decenas y unidades.
+0038   0841           00109         movf BCD_Centenas,W                                     ;Visualiza centenas.
+0039   2189           00110         call LCD_Nibble                                         
+003A   0829           00111         movf Auxiliar,W                                         ;Visualiza las decenas y unidades.
+003B   2185           00112         call LCD_ByteCompleto
+003C   2173           00113         Call LCD_UnEspacioBlanco
+003D   3080           00114         movlw M3
+003E   20E0           00115         call LCD_Mensaje
+                      00116 
+003F   21CA           00117         call Retardo_2s                                         ;Retardo antes de refresco              
+                                            
+Warning[203]: Found opcode in column 1. (goto)
+0040   280C           00118 goto CONVERSION                                                                                         
+                                                                            ;øDONDE ESTA EL ERROR FATAL?
+                      00119 ;-----------------------------------;Ciclamos la conversion ADC
+0041                  00120 CALCULO_TEMP
+Message[305]: Using default destination of 1 (file).
+0041   08A1           00121         movf TEMPL
+0042   00AA           00122         movwf Arit_Multiplicando                ;Cargamos la parte baja para la multiplicacion
+0043   3064           00123         movlw d'100'
+0044   00AB           00124         movwf Arit_Multiplicador                ;Multiplicamos TEMPL por 100
+0045   2097           00125         call Arit_Multiplica_8Bit
+                      00126 ;-----------------------------------;SecciÛn para multiplicar y sacar temperatura (se multiplica por 100
+                            )
+0046   0831           00127         movf Arit_Producto_H,0
+0047   00A6           00128         movwf TEMPFH
+0048   0830           00129         movf Arit_Producto_L,0
+0049   00A5           00130         movwf TEMPFL
+004A                  00131 AJUSTE_TEMP                             
+                      00132         ;movlw d'8'                                             ;Ajuste fijo para grados inferiores a 25
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                             aproximado 
+                      00133         ;addwf TEMPFH                                   ;                                       Error de
+                             calculo (?) - Verificar
+004A   2057           00134         call REAJUSTE_TEMP                              ;Ajuste dependiente de la parte alta
+Warning[203]: Found opcode in column 1. (return)
+004B   0008           00135 return
+                      00136 ;-----------------------------------;Subrutina para calculo de temperatura
+004C                  00137 CALCULO_HUM
+Message[305]: Using default destination of 1 (file).
+004C   08A4           00138         movf HUML
+004D   00AA           00139         movwf Arit_Multiplicando                ;Cargamos la parte baja para la multiplicacion
+004E   3064           00140         movlw d'100'
+004F   00AB           00141         movwf Arit_Multiplicador                ;Multiplicamos HUML por 100
+0050   2097           00142         call Arit_Multiplica_8Bit
+                      00143 ;-----------------------------------;SecciÛn para multiplicar y sacar humedad (se multiplica por 100)
+0051   0831           00144         movf Arit_Producto_H,0
+0052   00A7           00145         movwf HUMFH
+0053   0830           00146         movf Arit_Producto_L,0
+0054   00A8           00147         movwf HUMFL
+0055                  00148 AJUSTE_HUM
+                      00149         ;movlw d'8'                                             ;Ajuste fijo para grados inferiores a 25
+                             aproximado 
+                      00150         ;addwf HUMFH                                    ;                                       Error de
+                             calculo (?) - Verificar
+0055   205C           00151         call REAJUSTE_HUM                               ;Ajuste dependiente de la parte alta
+Warning[203]: Found opcode in column 1. (return)
+0056   0008           00152 return
+                      00153 ;-----------------------------------;Subrutina para calculo de humedad
+0057                  00154 REAJUSTE_TEMP
+0057   3001           00155         movlw d'1'
+Message[305]: Using default destination of 1 (file).
+0058   07A6           00156         addwf TEMPFH
+0059   0BA2           00157         decfsz TEMPH,f                                  ;Dependiendo el contenido de TEMPH se realiza un
+                             ajuste a la medida final TEMPHF
+005A   2857           00158         goto REAJUSTE_TEMP
+Warning[203]: Found opcode in column 1. (return)
+005B   0008           00159 return
+                      00160 ;-----------------------------------;Subrutina de reajuste dependiendo el resultado 
+005C                  00161 REAJUSTE_HUM
+005C   3001           00162         movlw d'1'
+Message[305]: Using default destination of 1 (file).
+005D   07A7           00163         addwf HUMFH
+005E   0BA3           00164         decfsz HUMH,f                                   ;Dependiendo el contenido de HUMH se realiza un 
+                            ajuste a la medida final TEMPHF
+005F   285C           00165         goto REAJUSTE_HUM
+Warning[203]: Found opcode in column 1. (return)
+0060   0008           00166 return
+                      00167 ;-----------------------------------;Subrutina de reajuste dependiendo el resultado 
+0061                  00168 CONVERSION_ADC
+0061   151F           00169         bsf             ADCON0,GO_DONE  ;Comienza la conversion
+0062   191F           00170         btfsc   ADCON0,GO_DONE  ;GO_DONE = 0 - Termina conversion y salta
+0063   2862           00171         GOTO            $-1                     ;Siempre y cuando no acabe, regresamos
+Warning[203]: Found opcode in column 1. (return)
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0064   0008           00172 return
+                      00173 ;------------------------------------;Subrutina para inicio de conversion ADC
+0065                  00174 Mensajes 
+0065   0782           00175                 addwf PCL,F
+Warning[207]: Found label after column 1. (M0)
+0066                  00176         M0
+0066   3454 3465 346D 00177                 DT "Temperatura: ", 0x00
+       3470 3465 3472 
+       3461 3474 3475 
+       3472 3461 343A 
+       3420 3400 
+Warning[207]: Found label after column 1. (M1)
+0074                  00178         M1
+0074   3448 3475 346D 00179                 DT "Humedad: ", 0x00
+       3465 3464 3461 
+       3464 343A 3420 
+       3400 
+Warning[207]: Found label after column 1. (M2)
+007E                  00180         M2
+007E   3443 3400      00181                 DT "C",0x00
+Warning[207]: Found label after column 1. (M3)
+0080                  00182         M3
+0080   3425 3400      00183                 DT "%",0x00
+                      00184 ;-----------------------------------;Mensajes
+0082                  00185 RETARDO_CARGA
+0082   3014           00186         movlw   d'20'                   ;carga valor 20 decimal
+0083   00A0           00187         movwf   Retardoini          ;en retardo inicial
+0084                  00188 Retardo
+0084   0BA0           00189         decfsz  Retardoini,f    ;decremente retardo inicial
+0085   2884           00190     goto    Retardo             ;si no termina ciclo, va a Retardo
+Warning[203]: Found opcode in column 1. (return)
+0086   0008           00191 return                                          ;una vez termina, se cumplen los 20us y regresamos
+                      00192 ;-----------------------------------;Retardo Inicial para el ADC = 20us
+0087                  00193 LIMPIA_REG
+0087   01A1           00194         clrf TEMPL                              ;Registro bajo de temperatura
+0088   01A2           00195         clrf TEMPH                              ;Registro alto de temperatura
+0089   01A3           00196         clrf HUMH                               ;Registro alto de humedad
+008A   01A4           00197         clrf HUML                               ;Registro bajo de humedad
+                      00198         ;clrf MULTH                             ;Resultado de 8 bits de la multiplicacion       - ALTO
+                      00199         ;clrf MULTL                             ;Resultado de 8 bits de la multiplicacion       - BAJO
+008B   01A5           00200         clrf TEMPFL                             ;Registro FINAL bajo de temperatura
+008C   01A6           00201         clrf TEMPFH                             ;Registro FINAL alto de temperatura
+008D   01A7           00202         clrf HUMFH                              ;Registro FINAL alto de humedad
+008E   01A8           00203         clrf HUMFL                              ;Registro FINAL bajo de humedad
+Warning[203]: Found opcode in column 1. (return)
+008F   0008           00204 return 
+                      00205 ;-----------------------------------;Subrutina de limpieza de variables 
+                      00206         INCLUDE <ARIT.INC>
+                      00001 ;
+                      00002 ; Librer˙} de subrutinas con diversas operaciones aritmÈticas:
+                      00003 ;
+                      00004 ; - Arit_VisualizaBinario: Visualiza en el LCD el dato en binario que le entra por W.
+                      00005 ; - Arit_Negar: Niega el contenido de un n˙mero binario de 16 bits.
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00006 ; - Arit_Suma_16Bit: Realiza la suma con dos registros de 16 bits.
+                      00007 ; - Arit_Resta_16Bit: Realiza la resta con dos registros de 16 bits.
+                      00008 ; - Arit_Multiplica_8Bit: Multiplica dos registros de 8 bits.
+                      00009 ; - Arit_Multiplica_16Bit: Multiplica dos registros de 16 bits.
+                      00010 ; - Arit_Divide_8Bit: Divide dos registros de 8 bits.
+                      00011 ; - Arit_Divide_16Bit: Divide un registro de 16 bits entre otro de 7 bits.
+                      00012 ; - Arit_BCD_Bin_16Bit: Convierte un n˙mero BCD de 5 d˙Ñitos a binario natural de 16 bits.
+                      00013 ; - Arit_Bin_BCD_16Bit: Convierte un n˙mero binario de 16 bits a BCD de 5 d˙Ñitos.
+                      00014 ; - Arit_VisualizaBCD: Visualiza en el LCD un n˙mero decimal de varios d˙Ñitos.
+                      00015 
+                      00016         CBLOCK
+  0000002A            00017         Arit_Multiplicando
+  0000002B            00018         Arit_Multiplicador
+  0000002C            00019         Arit_Multiplicando_H                            ; Byte bajo del operando 1.
+  0000002D            00020         Arit_Multiplicador_H                            ; Byte bajo del operando 2.
+  0000002E            00021         Arit_Multiplicando_L                            ; Byte bajo del operando 1.
+  0000002F            00022         Arit_Multiplicador_L
+  00000030            00023         Arit_Producto_L                         ; Byte bajo del byte 1 del resultado.
+  00000031            00024         Arit_Producto_H                         ; Byte alto del byte 1 del resultado.
+  00000032            00025         Arit_ContadorBits                               ; Para realizar diferentes contadores con bits.
+  00000033            00026         Arit_Dividendo_H
+  00000034            00027         Arit_Dividendo_L
+  00000035            00028         Arit_Cociente_H
+  00000036            00029         Arit_Cociente_L
+  00000037            00030         Arit_Resto
+  00000038            00031         Arit_Divisor
+                      00032 ;       Arit_Auxiliar                                   ; Registro temporal para realizar operaciones in
+                            termedias.
+  00000039            00033         Arit_Operando_1H
+  0000003A            00034         Arit_Operando_1L
+  0000003B            00035         Arit_Operando_2H                        ;para resta de 16 bits. Aqui guarda el resultado.
+  0000003C            00036         Arit_Operando_2L
+  0000003D            00037         Arit_Producto_1H                
+  0000003E            00038         Arit_Producto_1L                
+  0000003F            00039         Arit_Producto_2H                
+  00000040            00040         Arit_Producto_2L
+                      00041 
+                      00042         ENDC
+                      00043 
+                      00044 ; Subrutina "Arit_Negar" ----------------------------------------------------------------
+                      00045 ;
+                      00046 ; Niega el contenido de un n˙mero de 16 bits almacenado en dos registros
+                      00047 ; (Arit_Operando_1H, Arit_Operando_1L).
+                      00048 ;
+                      00049 ; Lo hace en complemento a 2 por el mÈtodo cl·sico, es decir, primero invierte todos los bits
+                      00050 ; y despuÈs le suma "1".
+                      00051 ;
+                      00052 ; Se utiliza la instrucciÛn "addwf __", en lugar de "incf ___", porque Èsta no posiciona
+                      00053 ; el flag de Carry.
+                      00054 ;
+                      00055 ; En el registro de trabajo W tambiÈn aparece el resultado de la negaciÛn del byte bajo.
+                      00056 ;
+                      00057 ; Entrada:      En los registros (Arit_Operando_1H, Arit_Operando_1L) el dato de 
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE  7
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00058 ;                       16 bits a negar.
+                      00059 ; Salida:       En los mismo registros (Arit_Operando_1H, Arit_Operando_1L) el dato de 
+                      00060 ;                       16 bits negado. En (W) el byte m·s bajo negado.
+                      00061 
+                      00062 ;;Arit_Negar
+                      00063 ;;      comf    Arit_Operando_1H,F              ; Invierte los registros que contienen los operandos.
+                      00064 ;;      comf    Arit_Operando_1L,F
+                      00065 ;;      movlw   .1                                              ; Le suma 1.
+                      00066 ;;      addwf   Arit_Operando_1L,F              
+                      00067 ;;      btfsc   STATUS,C                                ; Si hay acarreo tiene que llevarlo al byte supe
+                            rior.
+                      00068 ;;      incf    Arit_Operando_1H,F      
+                      00069 ;;      movf    Arit_Operando_1L,W              ; En (W) el resultado del byte bajo.
+                      00070 ;;      return
+                      00071 
+                      00072 
+                      00073 ; Subrutinas "Arit_Suma_16Bit" y "Arit_Resta_16Bit" ---------------------------------------
+                      00074 ;
+                      00075 ; Realiza la suma/resta en 16 bits (Operando 2) +/- (Operando 1) y el resultado lo guarda en
+                      00076 ; (Operando 2). El resultado lo guarda en 16 bits. Es decir:
+                      00077 ; (Arit_Operando_2H, Arit_Operando_2L) +/- (Arit_Operando_1H, Arit_Operando_1L) --> 
+                      00078 ; (Arit_Operando_2H, Arit_Operando_2L).
+                      00079 ;
+0090                  00080 Arit_Resta_16Bit
+                      00081 ;;      call    Arit_Negar                              ; Para la resta, simplemente niega el numero de 
+                            16 bits
+0090                  00082 Arit_Suma_16Bit                                         ; (Arit_Operando_1H, Arit_Operando_1L) y suma.
+0090   083A           00083         movf    Arit_Operando_1L,W              ; Suma el byte m·s bajo.
+0091   07BC           00084         addwf   Arit_Operando_2L,F              ; y lo guarda en Arit_Operando_2L.
+0092   1803           00085         btfsc   STATUS,C                                ; Si hay acarreo incrementa en una unidad uno de
+0093   0AB9           00086         incf    Arit_Operando_1H,F              ; de los bytes altos.
+0094   0839           00087         movf    Arit_Operando_1H,W
+0095   07BB           00088         addwf   Arit_Operando_2H,F              ; Suma el byte alto.
+0096   0008           00089         return
+                      00090 
+                      00091 
+                      00092 ; Subrutinas "Arit_Multiplica_8Bit" ------------------------------------------------------
+                      00093 ;
+                      00094 ; Realiza la multiplicaciÛn del contenido de dos registros de 8 bits. El resultado se almacena
+                      00095 ; en 16 bits. La operaciÛn se realiza sin signo.
+                      00096 ;
+                      00097 ; El algoritmo utilizado se basa en el mÈtodo empleado para efectuar una multiplicaciÛn
+                      00098 ; manualmente con l·piz y papel. En este mÈtodo, la multiplicaciÛn se lleva a cabo tomando
+                      00099 ; un bit del multiplicador, empezando por el menos significativo: 
+                      00100 ; - Si es "1" se efect˙a la suma del multiplicando y el producto parcial anterior. El producto
+                      00101 ;   parcial resultante se desplaza un bit a la derecha, introduciendo un cero por la izquierda.
+                      00102 ; - Si es "0" la suma no es necesaria y el producto parcial resultante anterior se desplaza un
+                      00103 ;   bit a la derecha, introduciendo adem·s un cero por la izquierda.
+                      00104 ;
+                      00105 ; Este proceso se repite tantas veces como bits tiene el multiplicador.
+                      00106 ;
+                      00107 ; Previo a la llamada de esta subrutinas los n˙meros a multiplicar se almacenan en los registros
+                      00108 ; Arit_Multiplicando y Arit_Multiplicador. El resultado se almacena en 16 bits en los registros 
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE  8
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00109 ; (Arit_Producto_H, Arit_Producto_L). Es decir:
+                      00110 ; (Arit_Multiplicando) * (Arit_Multiplicador) --> (Arit_Producto_H, Arit_Producto_L)
+                      00111 ;
+                      00112 ; Se utilizan posiciones de memoria definidas anteriormente, a las que se les cambia el nombre 
+                      00113 ; por motivos puramente pedagÛgicos:
+                      00114 
+                      00115 
+                      00116 
+0097                  00117 Arit_Multiplica_8Bit
+0097   01B1           00118         clrf    Arit_Producto_H                 ; En principio el resultado es cero.
+0098   01B0           00119         clrf    Arit_Producto_L
+0099   3008           00120         movlw   .8                                              ; Carga el contador de 8 bits.
+009A   00B2           00121         movwf   Arit_ContadorBits
+009B   082A           00122         movf    Arit_Multiplicando,W    ; Carga el multiplicando.
+009C                  00123 Arit_MultiplicaBit8
+009C   0CAB           00124         rrf             Arit_Multiplicador,F    ; Va a comprobar el siguiente bit del multiplicador.
+009D   1803           00125         btfsc   STATUS,C                                ; Si el bit del multiplicador es "1"
+009E   07B1           00126         addwf   Arit_Producto_H,F               ; suma el resultado parcial anterior m·s el multiplicand
+                            o.
+009F   0CB1           00127         rrf             Arit_Producto_H,F               ; Desplaza el resultado parcial un lugar hacia l
+                            a 
+00A0   0CB0           00128         rrf             Arit_Producto_L,F               ; derecha, introduciendo un "0" por la izquierda
+                            .
+00A1   0BB2           00129         decfsz  Arit_ContadorBits,F             ; øHa multiplicado los 8 bits?
+00A2   289C           00130         goto    Arit_MultiplicaBit8             ; Repite la operaciÛn.
+00A3   0008           00131         return
+                      00132         
+                      00133 
+                      00134 ; Subrutinas "Arit_Multiplica_16Bit" ------------------------------------------------------
+                      00135 ;
+                      00136 ; Realiza la multiplicaciÛn del contenido de dos registros de 16 bits. El resultado se almacena
+                      00137 ; en 32 bits. La operaciÛn se realizan sin signo.
+                      00138 ;
+                      00139 ; El algoritmo utilizado es similar al de la multiplicaciÛn de 8 bits.
+                      00140 ;
+                      00141 ; Previo a la llamada de esta subrutinas los n˙meros a multiplicar se almacenan en los registros
+                      00142 ; (Arit_Multiplicando_H, Arit_Multiplicando_L) y (Arit_Multiplicador_H, Arit_Multiplicador_L).
+                      00143 ; El resultado en 32 bits se proporciona en los registros 
+                      00144 ; (Arit_Producto_2H, Arit_Producto_2L, Arit_Producto_1H, Arit_Producto_1L).
+                      00145 ;
+                      00146 ; Se utilizan posiciones de memoria definidas anteriormente, a las que se les cambia el nombre 
+                      00147 ; por motivos puramente pedagÛgicos:
+                      00148 
+                      00149 ;Arit_Multiplicando_H   EQU     Arit_Operando_1H
+                      00150 ;Arit_Multiplicando_L   EQU     Arit_Operando_1L
+                      00151 ;Arit_Multiplicador_H   EQU     Arit_Operando_2H
+                      00152 ;Arit_Multiplicador_L   EQU     Arit_Operando_2L
+                      00153 ;Arit_Producto_1H               EQU     Arit_Resultado_1H
+                      00154 ;Arit_Producto_1L               EQU     Arit_Resultado_1L
+                      00155 ;Arit_Producto_2H               EQU     Arit_Resultado_2H
+                      00156 ;Arit_Producto_2L               EQU     Arit_Resultado_2L
+                      00157 
+00A4                  00158 Arit_Multiplica_16Bit
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE  9
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00A4   01BD           00159         clrf    Arit_Producto_1H                ; En principio el resultado es cero.
+00A5   01BE           00160         clrf    Arit_Producto_1L
+00A6   01BF           00161         clrf    Arit_Producto_2H
+00A7   01C0           00162         clrf    Arit_Producto_2L
+00A8   3010           00163         movlw   .16                                             ; Carga el contador de 16 bits.
+00A9   00B2           00164         movwf   Arit_ContadorBits
+00AA                  00165 Arit_Multiplica16Bit
+00AA   0CAD           00166         rrf             Arit_Multiplicador_H,F  ; Va a comprobar el siguiente bit del multiplicador.
+00AB   0CAF           00167         rrf             Arit_Multiplicador_L,F
+00AC   1C03           00168         btfss   STATUS,C
+00AD   28B4           00169         goto    Arit_Multiplicador_BitCero
+00AE   082E           00170         movf    Arit_Multiplicando_L,W  ; Suma en 16 bits el resultado parcial y
+00AF   07C0           00171         addwf   Arit_Producto_2L,F              ; y el multiplicando.
+00B0   1803           00172         btfsc   STATUS,C
+00B1   0ABF           00173         incf    Arit_Producto_2H,F
+00B2   082C           00174         movf    Arit_Multiplicando_H,W
+00B3   07BF           00175         addwf   Arit_Producto_2H,F
+00B4                  00176 Arit_Multiplicador_BitCero
+00B4   0CBF           00177         rrf             Arit_Producto_2H,F              ; Desplaza el resultado parcial un lugar hacia l
+                            a 
+00B5   0CC0           00178         rrf             Arit_Producto_2L,F              ; derecha, introduciendo un "0" por la izquierda
+                            .
+00B6   0CBD           00179         rrf             Arit_Producto_1H,F
+00B7   0CBE           00180         rrf             Arit_Producto_1L,F
+00B8   0BB2           00181         decfsz  Arit_ContadorBits,F             ; øHa multiplicado los 16 bits?
+00B9   28AA           00182         goto    Arit_Multiplica16Bit    ; Repite la operaciÛn.
+00BA   0008           00183         return
+                      00184 
+                      00185 
+                      00186 
+                      00187 ; Subrutinas "Arit_Divide_16Bit" --------------------------------------------------------
+                      00188 ;
+                      00189 ; Realiza la divisiÛn del contenido del dividendo de 16 bits entre un divisor de 7 bits.
+                      00190 ; El m·ximo valor del divisor serÅE127.
+                      00191 ;
+                      00192 ; Se utiliza el mismo algoritmo explicado para la subrutina Arit_Divide_8bit.
+                      00193 ;
+                      00194 ; Entradas:
+                      00195 ;       - (Arit_Dividendo_H) y (Arit_Dividendo_L) que hacen de dividendo de 16 bits.
+                      00196 ;       - (Arit_Divisor) que es el divisor de 7 bits, (m·ximo b'01111111'=0x7F=d'127').
+                      00197 ; Salidas:
+                      00198 ;       - (Arit_Cociente_H) y (Arit_Cociente_L) que hacen de cociente de 16 bits.
+                      00199 ;       - (Resto) de 8 bits.
+                      00200 ;       - (W), en el registro de trabajo tambiÈn el resto.
+                      00201 ;
+                      00202 ; La divisiÛn se harÅEsin signo y el programa que le llame deberÅEdetectar que el divisor no
+                      00203 ; es cero. El divisor serÅEde 7 bits, es decir su valor m·ximo serÅE
+                      00204 ; b'01111111'=0x7F=d'127'.
+                      00205 ;
+                      00206 ; Se utilizan posiciones de memoria definidas anteriormente, a las que se les cambia el nombre 
+                      00207 ; por motivos puramente pedagÛgicos:
+                      00208 ;
+                      00209 
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 10
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00210 
+00BB                  00211 Arit_Divide_16Bit
+00BB   01B5           00212         clrf    Arit_Cociente_H                 ; En principio el resultado es cero.
+00BC   01B6           00213         clrf    Arit_Cociente_L
+00BD   01B7           00214         clrf    Arit_Resto
+00BE   3010           00215         movlw   .16                                             ; Carga el contador.
+00BF   00B2           00216         movwf   Arit_ContadorBits
+00C0                  00217 Arit_DivideBit16
+00C0   0DB4           00218         rlf             Arit_Dividendo_L,F
+00C1   0DB3           00219         rlf             Arit_Dividendo_H,F
+00C2   0DB7           00220         rlf             Arit_Resto,F                    ; (Arit_Resto) contiene el dividendo parcial.
+00C3   0838           00221         movf    Arit_Divisor,W
+00C4   0237           00222         subwf   Arit_Resto,W                    ; Compara dividendo parcial y divisor.
+00C5   1803           00223         btfsc   STATUS,C                                ; Si (dividendo parcial)>(divisor)
+00C6   00B7           00224         movwf   Arit_Resto                              ; (dividendo parcial) - (divisor) --> (dividendo
+                             parcial)
+00C7   0DB6           00225         rlf             Arit_Cociente_L,F               ; Desplaza el cociente introduciendo el bit apro
+                            piado
+00C8   0DB5           00226         rlf             Arit_Cociente_H,F               ; "0" ÅE"1" seg˙n corresponda.
+00C9   0BB2           00227         decfsz  Arit_ContadorBits,F
+00CA   28C0           00228         goto    Arit_DivideBit16
+00CB   0837           00229         movf    Arit_Resto,W                    ; El resto tambiÈn en (W).
+00CC   0008           00230         return
+                      00231         
+                      00207         INCLUDE <BIN_BCD.INC>                   ;Para mandar constantes al LCD, debemos convertir a BCD
+                      00001 ;******************************** LibrerÌa "BIN_BCD.INC" ********************************
+                      00002 ;
+                      00003 ;       ===================================================================
+                      00004 ;         Del libro "MICROCONTROLADOR PIC16F84. DESARROLLO DE PROYECTOS"
+                      00005 ;         E. Palacios, F. Remiro y L. LÛpez.            www.pic16f84a.com
+                      00006 ;         Editorial Ra-Ma.  www.ra-ma.es
+                      00007 ;       ===================================================================
+                      00008 ;
+                      00009 ; Un n˙mero binario natural de 8 bits es convertido a BCD. El resultado se guarda en tres
+                      00010 ; posiciones de memorias llamadas: BCD_Centenas, BCD_Decenas y BCD_Unidades.
+                      00011 ;
+                      00012 ; El procedimiento utilizado es mediante restas de 10, tal como se explicÛ en el capÌtulo 9.
+                      00013 ;
+                      00014 ; Entrada:      En el registro W el n˙mero binario natural a convertir.
+                      00015 ; Salidas:      En (BCD_Centenas), (BCD_Decenas) y (BCD_Unidades).
+                      00016 ;                       En el registro W tambiÈn las decenas (nibble alto) y unidades (nibble bajo).
+                      00017 
+                      00018 ; Subrutina "BIN_a_BCD" -----------------------------------------------------------------
+                      00019 
+                      00020         CBLOCK                                          ; En las subrutinas no se debe fijar la direcciÛ
+                            n
+  00000041            00021         BCD_Centenas                            ; de la RAM de usuario. Se toma a continuaciÛn de
+  00000042            00022         BCD_Decenas                                     ; la ˙ltima asignada.
+  00000043            00023         BCD_Unidades    
+                      00024         ENDC
+                      00025 ;
+00CD                  00026 BIN_a_BCD
+00CD   01C1           00027         clrf    BCD_Centenas            ; Carga los registros con el resultado inicial.
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 11
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00CE   01C2           00028         clrf    BCD_Decenas                     ; En principio las centenas y decenas a cero.
+00CF   00C3           00029         movwf   BCD_Unidades            ; Se carga el n˙mero binario a convertir.
+00D0                  00030 BCD_Resta10
+00D0   300A           00031         movlw   .10                                     ; A las unidades se les va restando 10 en cada
+00D1   0243           00032         subwf   BCD_Unidades,W          ; pasada. (W)=(BCD_Unidades) -10.
+00D2   1C03           00033         btfss   STATUS,C                        ; øC = 1?, ø(W) positivo?, ø(BCD_Unidades)>=10?
+00D3   28DD           00034         goto    BIN_BCD_Fin                     ; No, es menor de 10. Se acabÛ.
+00D4                  00035 BCD_IncrementaDecenas
+00D4   00C3           00036         movwf   BCD_Unidades            ; Recupera lo que queda por restar.
+00D5   0AC2           00037         incf    BCD_Decenas,F           ; Incrementa las decenas y comprueba si ha llegado
+00D6   300A           00038         movlw   .10                                     ; a 10. Lo hace mediante una resta.
+00D7   0242           00039         subwf   BCD_Decenas,W           ; (W)=(BCD_Decenas)-10).
+00D8   1C03           00040         btfss   STATUS,C                        ; øC = 1?, ø(W) positivo?, ø(BCD_Decenas)>=10?
+00D9   28D0           00041         goto    BCD_Resta10                     ; No. Vuelve a dar otra pasada, rest·ndole 10 a
+00DA                  00042 BCD_IncrementaCentenas                  ; las unidades.
+00DA   01C2           00043         clrf    BCD_Decenas                     ; Pone a cero las decenas 
+00DB   0AC1           00044         incf    BCD_Centenas,F          ; e incrementa las centenas.
+00DC   28D0           00045         goto    BCD_Resta10                     ; Otra pasada: Resta 10 al n˙mero a convertir.
+00DD                  00046 BIN_BCD_Fin
+00DD   0E42           00047         swapf   BCD_Decenas,W           ; En el nibble alto de (W) tambiÈn las decenas.
+00DE   0743           00048         addwf   BCD_Unidades,W          ; En el nibble bajo de (W) las unidades.
+00DF   0008           00049         return                                          ; Vuelve al programa principal.
+                      00050         
+                      00051 ; La directiva "END" se debe poner en el programa principal no aquÌ.
+                      00052 
+                      00053 ;       ===================================================================
+                      00054 ;         Del libro "MICROCONTROLADOR PIC16F84. DESARROLLO DE PROYECTOS"
+                      00055 ;         E. Palacios, F. Remiro y L. LÛpez.            www.pic16f84a.com
+                      00056 ;         Editorial Ra-Ma.  www.ra-ma.es
+                      00057 ;       ===================================================================
+                      00208         INCLUDE <LCD_MENS.INC>                  
+                      00001 ;**************************** LibrerÌa "LCD_MENS.INC" ********************************
+                      00002 ;
+                      00003 ;       ===================================================================
+                      00004 ;         Del libro "MICROCONTROLADOR PIC16F84. DESARROLLO DE PROYECTOS"
+                      00005 ;         E. Palacios, F. Remiro y L. LÛpez.            www.pic16f84a.com
+                      00006 ;         Editorial Ra-Ma.  www.ra-ma.es
+                      00007 ;       ===================================================================
+                      00008 ;
+                      00009 ; LibrerÌa de subrutinas para el manejo de mensajes a visualizar en un visualizador LCD.
+                      00010 
+                      00011         CBLOCK
+  00000044            00012         LCD_ApuntaCaracter                              ; Indica la posiciÛn del car·cter a visualizar
+                      00013                                                                         ; respecto del comienzo de todos
+                             los mensajes,
+                      00014                                                                         ; (posiciÛn de la etiqueta "Mens
+                            ajes").
+  00000045            00015         LCD_ValorCaracter                               ; CÛdigo ASCII del car·cter a 
+                      00016         ENDC                                                    ; visualizar.
+                      00017 
+                      00018 ; Los mensajes tienen que estar situados dentro de las 256 primeras posiciones de la 
+                      00019 ; memoria de programa, es decir, no pueden superar la direcciÛn 0FFh.
+                      00020 
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 12
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00021 ; Subrutina "LCD_Mensaje" ---------------------------------------------------------------
+                      00022 ;
+                      00023 ; Visualiza por pantalla el mensaje apuntado por el registro W.
+                      00024 ;
+                      00025 ; Los mensajes deben localizarse dentro de una zona encabezada por la etiqueta "Mensajes" y que
+                      00026 ; tenga la siguiente estructura:
+                      00027 ;
+                      00028 ; Mensajes                                                      ; °Etiqueta obligatoria!
+                      00029 ;       addwf   PCL,F
+                      00030 ; Mensaje0                                                      ; PosiciÛn inicial del mensaje.
+                      00031 ;       DT ".. ..", 0x00                                ; Mensaje terminado en 0x00.
+                      00032 ; Mensaje1
+                      00033 ;       ...     
+                      00034 ;       ...
+                      00035 ; FinMensajes
+                      00036 ;
+                      00037 ; La llamada a esta subrutina se realizar· siguiendo este ejemplo:
+                      00038 ;
+                      00039 ;       movlw   Mensaje0                                ; Carga la posiciÛn del mensaje.
+                      00040 ;       call    LCD_Mensaje                             ; Visualiza el mensaje.
+                      00041 ;
+00E0                  00042 LCD_Mensaje
+00E0   00C4           00043         movwf   LCD_ApuntaCaracter              ; PosiciÛn del primer car·cter del mensaje.
+00E1   3065           00044         movlw   Mensajes                                ; Halla la posiciÛn relativa del primer car·cter
+00E2   02C4           00045         subwf   LCD_ApuntaCaracter,F    ; del mensaje respecto de etiqueta "Mensajes".
+00E3   03C4           00046         decf    LCD_ApuntaCaracter,F    ; Compensa la posiciÛn que ocupa "addwf PCL,F".
+00E4                  00047 LCD_VisualizaOtroCaracter
+00E4   0844           00048         movf    LCD_ApuntaCaracter,W
+00E5   2065           00049         call    Mensajes                                ; Obtiene el cÛdigo ASCII del car·cter apuntado.
+00E6   00C5           00050         movwf   LCD_ValorCaracter               ; Guarda el valor de car·cter.
+00E7   08C5           00051         movf    LCD_ValorCaracter,F             ; Lo ˙nico que hace es posicionar flag Z. En caso
+00E8   1903           00052         btfsc   STATUS,Z                                ; que sea "0x00", que es cÛdigo indicador final 
+00E9   28ED           00053         goto    LCD_FinMensaje                  ; de mensaje, sale fuera.
+00EA                  00054 LCD_NoUltimoCaracter
+00EA   2151           00055         call    LCD_Caracter                    ; Visualiza el car·cter ASCII leÌdo.
+00EB   0AC4           00056         incf    LCD_ApuntaCaracter,F    ; Apunta a la posiciÛn del siguiente car·cter 
+00EC   28E4           00057         goto    LCD_VisualizaOtroCaracter       ; dentro del mensaje.
+00ED                  00058 LCD_FinMensaje
+00ED   0008           00059         return                                                  ; Vuelve al programa principal.
+                      00060 
+                      00061 ; Subrutina "LCD_MensajeMovimiento" -----------------------------------------------------
+                      00062 ;
+                      00063 ; Visualiza†un mensaje de mayor longitud que los 16 caracteres que pueden representarse
+                      00064 ; en una lÌnea, por tanto se desplaza a travÈs de la pantalla.
+                      00065 ;
+                      00066 ; En el mensaje debe dejarse 16 espacios en blanco, al principio y al final para
+                      00067 ; conseguir que el desplazamiento del mensaje sea lo m·s legible posible.
+                      00068 ;
+                      00069         CBLOCK  
+  00000046            00070         LCD_CursorPosicion                              ; Contabiliza la posiciÛn del cursor dentro de l
+                            a
+                      00071         ENDC                                                    ; pantalla LCD
+                      00072 
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 13
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+00EE                  00073 LCD_MensajeMovimiento
+00EE   00C4           00074         movwf   LCD_ApuntaCaracter              ; PosiciÛn del primer car·cter del mensaje.
+00EF   3065           00075         movlw   Mensajes                                ; Halla la posiciÛn relativa del primer car·cter
+00F0   02C4           00076         subwf   LCD_ApuntaCaracter,F    ; del mensaje respecto de la etiqueta "Mensajes".
+00F1   03C4           00077         decf    LCD_ApuntaCaracter,F    ; Compensa la posiciÛn que ocupa "addwf PCL,F".
+00F2                  00078 LCD_PrimeraPosicion
+00F2   01C6           00079         clrf    LCD_CursorPosicion              ; El cursor en la posiciÛn 0 de la lÌnea.
+00F3   214C           00080         call    LCD_Borra                               ; Se sit˙a en la primera posiciÛn de la lÌnea 1 
+                            y
+00F4                  00081 LCD_VisualizaCaracter                           ; borra la pantalla.
+00F4   3010           00082         movlw   LCD_CaracteresPorLinea  ; øHa llegado a final de lÌnea?
+00F5   0246           00083         subwf   LCD_CursorPosicion,W
+00F6   1D03           00084         btfss   STATUS,Z
+00F7   28FD           00085         goto    LCD_NoEsFinalLinea
+00F8                  00086 LCD_EsFinalLinea
+00F8   21AC           00087         call    Retardo_200ms                   ; Lo mantiene visualizado durante este tiempo.
+00F9   21AC           00088         call    Retardo_200ms
+00FA   300F           00089         movlw   LCD_CaracteresPorLinea-1; Apunta a la posiciÛn del segundo car·cter visualizado
+00FB   02C4           00090         subwf   LCD_ApuntaCaracter,F    ; en pantalla, que ser· el primero en la siguiente
+00FC   28F2           00091         goto    LCD_PrimeraPosicion             ; visualizaciÛn de lÌnea, para producir el efecto
+00FD                  00092 LCD_NoEsFinalLinea                                      ; de desplazamiento hacia la izquierda.
+00FD   0844           00093         movf    LCD_ApuntaCaracter,W
+00FE   2065           00094         call    Mensajes                                ; Obtiene el ASCII del car·cter apuntado.
+00FF   00C5           00095         movwf   LCD_ValorCaracter               ; Guarda el valor de car·cter.
+0100   08C5           00096         movf    LCD_ValorCaracter,F             ; Lo ˙nico que hace es posicionar flag Z. En caso
+0101   1903           00097         btfsc   STATUS,Z                                ; que sea "0x00", que es cÛdigo indicador final 
+0102   2907           00098         goto    LCD_FinMovimiento               ; de mensaje, sale fuera.
+0103                  00099 LCD_NoUltimoCaracter2
+0103   2151           00100         call    LCD_Caracter                    ; Visualiza el car·cter ASCII leÌdo.
+0104   0AC6           00101         incf    LCD_CursorPosicion,F    ; Contabiliza el incremento de posiciÛn del 
+                      00102                                                                         ; cursor en la pantalla.
+0105   0AC4           00103         incf    LCD_ApuntaCaracter,F    ; Apunta a la siguiente posiciÛn por visualizar.
+0106   28F4           00104         goto    LCD_VisualizaCaracter   ; Vuelve a visualizar el siguiente car·cter
+0107                  00105 LCD_FinMovimiento                                       ; de la lÌnea.
+0107   0008           00106         return                                                  ; Vuelve al programa principal.
+                      00107         
+                      00108 ;       ===================================================================
+                      00109 ;         Del libro "MICROCONTROLADOR PIC16F84. DESARROLLO DE PROYECTOS"
+                      00110 ;         E. Palacios, F. Remiro y L. LÛpez.            www.pic16f84a.com
+                      00111 ;         Editorial Ra-Ma.  www.ra-ma.es
+                      00112 ;       ===================================================================     
+                      00113         
+                      00209         INCLUDE <LCD_4BIT_16F877_D_E.INC>
+                      00001 ; Estas subrutinas permiten realizar las tareas b·sicas de control de un mÛdulo LCD de 2
+                      00002 ; lÌneas por 16 caracteres, compatible con el modelo LM016L.
+                      00003 ;
+                      00004 ; El visualizador LCD est· conectado al Puerto B del PIC mediante un bus de 4 bits. Las
+                      00005 ; conexiones son:
+                      00006 ;    -  Las 4 lÌneas superiores del mÛdulo LCD, pines <DB7:DB4>  se conectan a las 4
+                      00007 ;       lÌneas superiores del Puerto B del PIC, pines <RB7:RB4>.
+                      00008 ;    -  Pin RS del LCD a la lÌnea RA0 del PIC.
+                      00009 ;    -  Pin R/W del LCD a la lÌnea RA1 del PIC, o a masa.
+                      00010 ;    -  Pin Enable del LCD a la lÌnea RA2 del PIC.
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 14
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00011 ;
+                      00012 ; Se utilizan llamadas a subrutinas de retardo de tiempo localizadas en la librerÌa RETARDOS.INC.
+                      00013 ;
+                      00014 ; ZONA DE DATOS *********************************************************************
+                      00015 
+                      00016         CBLOCK
+  00000047            00017         LCD_Dato
+  00000048            00018         LCD_GuardaDato
+  00000049            00019         LCD_GuardaTRISD
+  0000004A            00020         LCD_Auxiliar1
+  0000004B            00021         LCD_Auxiliar2
+                      00022         ENDC
+                      00023 
+  00000010            00024 LCD_CaracteresPorLinea  EQU     .16     ; N˙mero de caracteres por lÌnea de la pantalla.
+                      00025 
+                      00026 #DEFINE  LCD_PinRS      PORTE,0
+                      00027 #DEFINE  LCD_PinRW      PORTE,1
+                      00028 #DEFINE  LCD_PinEnable  PORTE,2
+                      00029 #DEFINE  LCD_BusDatos   PORTD
+                      00030 
+                      00031 ; Subrutina "LCD_Inicializa" ------------------------------------------------------------
+                      00032 ;
+                      00033 ; InicializaciÛn del mÛdulo LCD: Configura funciones del LCD, produce reset por software,
+                      00034 ; borra memoria y enciende pantalla. El fabricante especifica que para garantizar la
+                      00035 ; configuraciÛn inicial hay que hacerla como sigue:
+                      00036 ;
+0108                  00037 LCD_Inicializa
+0108   1683           00038         bsf     STATUS,RP0              ; Configura las lÌneas conectadas al pines RS,
+0109   1009           00039         bcf     LCD_PinRS               ; R/W y E.
+010A   1109           00040         bcf     LCD_PinEnable
+010B   1089           00041         bcf     LCD_PinRW
+010C   3005           00042         movlw .5                        ; Configura todos los pines del puerto E como digitales
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+010D   009F           00043         movwf ADCON1
+010E   1283           00044         bcf     STATUS,RP0
+010F   1089           00045         bcf     LCD_PinRW               ; En caso de que estÈ conectado le indica
+                      00046                                         ; que se va a escribir en el LCD.
+0110   1109           00047         bcf     LCD_PinEnable           ; Impide funcionamiento del LCD poniendo E=0.
+0111   1009           00048         bcf     LCD_PinRS               ; Activa el Modo Comando poniendo RS=0.
+0112   21B2           00049         call    Retardo_20ms
+0113   3030           00050         movlw   b'00110000'     
+0114   2122           00051         call    LCD_EscribeLCD          ; Escribe el dato en el LCD.
+0115   21B6           00052         call    Retardo_5ms     
+0116   3030           00053         movlw   b'00110000'     
+0117   2122           00054         call    LCD_EscribeLCD
+0118   219F           00055         call    Retardo_200micros
+0119   3030           00056         movlw   b'00110000'     
+011A   2122           00057         call    LCD_EscribeLCD
+011B   3020           00058         movlw   b'00100000'             ; Interface de 4 bits.
+011C   2122           00059         call    LCD_EscribeLCD
+                      00060 
+                      00061 ; Ahora configura el resto de los par·metros: 
+                      00062 
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 15
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+011D   214E           00063         call    LCD_2Lineas4Bits5x7     ; LCD de 2 lÌneas y caracteres de 5x7 puntos.
+011E   214C           00064         call    LCD_Borra               ; Pantalla encendida y limpia. Cursor al principio
+011F   214A           00065         call    LCD_CursorOFF           ; de la lÌnea 1. Cursor apagado.
+0120   2138           00066         call    LCD_CursorIncr          ; Cursor en modo incrementar.
+0121   0008           00067         return
+                      00068 
+                      00069 ; Subrutina "LCD_EscribeLCD" -----------------------------------------------------------
+                      00070 ;
+                      00071 ; EnvÌa el dato del registro de trabajo W al bus de dato y produce un pequeÒo pulso en el pin
+                      00072 ; Enable del LCD. Para no alterar el contenido de las lÌneas de la parte baja del Puerto B que
+                      00073 ; no son utilizadas para el LCD (pines RB3:RB0), primero se lee estas lÌneas y despuÈs se
+                      00074 ; vuelve a enviar este dato sin cambiarlo.
+                      00075 
+0122                  00076 LCD_EscribeLCD
+0122   39F0           00077         andlw   b'11110000'             ; Se queda con el nibble alto del dato que es el
+0123   00C7           00078         movwf   LCD_Dato                ; que hay que enviar y lo guarda.
+0124   0808           00079         movf    LCD_BusDatos,W          ; Lee la informaciÛn actual de la parte baja
+0125   390F           00080         andlw   b'00001111'             ; del Puerto B, que no se debe alterar.
+0126   04C7           00081         iorwf   LCD_Dato,F              ; Enviar· la parte alta del dato de entrada
+                      00082                                         ; y en la parte baja lo que habÌa antes.
+0127   1683           00083         bsf     STATUS,RP0              ; Acceso al Banco 1.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0128   0808           00084         movf    TRISD,W                 ; Guarda la configuraciÛn que tenÌa antes TRISD.
+0129   00C9           00085         movwf   LCD_GuardaTRISD
+012A   300F           00086         movlw   b'00001111'             ; Las 4 lÌneas inferiores del Puerto B se dejan 
+012B   0588           00087         andwf   PORTD,F                 ; como estaban y las 4 superiores como salida.
+012C   1283           00088         bcf     STATUS,RP0              ; Acceso al Banco 0.
+012D   1509           00089         BSF     PORTE, 0x02
+012E   0847           00090         movf    LCD_Dato,W              ; Recupera el dato a enviar.
+012F   0088           00091         movwf   LCD_BusDatos            ; EnvÌa el dato al mÛdulo LCD.
+0130   0000           00092         NOP                             ; Permite funcionamiento del LCD mediante un pequeÒo
+0131   1109           00093         bcf     LCD_PinEnable           ; pulso y termina impidiendo el funcionamiento del LCD.
+0132   1683           00094         bsf     STATUS,RP0              ; Acceso al Banco 1. Restaura el antiguo valor en
+0133   0849           00095         movf    LCD_GuardaTRISD,W       ; la configuraciÛn del Puerto B.
+0134   0088           00096         movwf   PORTD                   ; Realmente es TRISD.
+0135   1283           00097         bcf     STATUS,RP0              ; Acceso al Banco 0.
+0136   21B8           00098         CALL    Retardo_2ms
+0137   0008           00099         return
+                      00100 
+                      00101 ; Subrutinas variadas para el control del mÛdulo LCD -----------------------------------------
+                      00102 ;
+                      00103 ;Los comandos que pueden ser ejecutados son:
+                      00104 ;
+0138                  00105 LCD_CursorIncr                          ; Cursor en modo incrementar.
+0138   3006           00106         movlw   b'00000110'
+0139   294F           00107         goto    LCD_EnviaComando
+013A                  00108 LCD_Linea1                              ; Cursor al principio de la LÌnea 1.
+013A   3080           00109         movlw   b'10000000'             ; DirecciÛn 00h de la DDRAM
+013B   294F           00110         goto    LCD_EnviaComando
+013C                  00111 LCD_Linea2                              ; Cursor al principio de la LÌnea 2.
+013C   30C0           00112         movlw   b'11000000'             ; DirecciÛn 40h de la DDRAM
+013D   294F           00113         goto    LCD_EnviaComando
+013E   3094           00114         MOVLW   0x94
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 16
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+013F   294F           00115         GOTO    LCD_EnviaComando
+0140   30D4           00116         MOVLW   0xD4
+0141   294F           00117         GOTO    LCD_EnviaComando
+0142                  00118 LCD_PosicionLinea1                      ; Cursor a posiciÛn de la LÌnea 1, a partir de la
+0142   3880           00119         iorlw   b'10000000'             ; direcciÛn 00h de la DDRAM m·s el valor del
+0143   294F           00120         goto    LCD_EnviaComando        ; registro W.
+0144                  00121 LCD_PosicionLinea2                      ; Cursor a posiciÛn de la LÌnea 2, a partir de la
+0144   38C0           00122         iorlw   b'11000000'             ; direcciÛn 40h de la DDRAM m·s el valor del
+0145   294F           00123         goto    LCD_EnviaComando        ; registro W.
+0146                  00124 LCD_OFF                         ; Pantalla apagada.
+0146   3008           00125         movlw   b'00001000'
+0147   294F           00126         goto    LCD_EnviaComando
+0148                  00127 LCD_CursorON                            ; Pantalla encendida y cursor encendido.
+0148   300E           00128         movlw   b'00001110'
+0149   294F           00129         goto    LCD_EnviaComando
+014A                  00130 LCD_CursorOFF                           ; Pantalla encendida y cursor apagado.
+014A   300C           00131         movlw   b'00001100'
+014B   294F           00132         goto    LCD_EnviaComando
+014C                  00133 LCD_Borra                               ; Borra toda la pantalla, memoria DDRAM y pone el 
+014C   3001           00134         movlw   b'00000001'             ; cursor a principio de la lÌnea 1.
+014D   294F           00135         goto    LCD_EnviaComando
+014E                  00136 LCD_2Lineas4Bits5x7                     ; Define la pantalla de 2 lÌneas, con caracteres
+014E   3028           00137         movlw   b'00101000'             ; de 5x7 puntos y conexiÛn al PIC mediante bus de
+                      00138 ;                                       ; 4 bits. 
+                      00139 
+                      00140 ; Subrutinas "LCD_EnviaComando" y "LCD_Caracter" ------------------------------------
+                      00141 ;
+                      00142 ; "LCD_EnviaComando". Escribe un comando en el registro del mÛdulo LCD. La palabra de
+                      00143 ; comando ha sido entregada a travÈs del registro W.  Trabaja en Modo Comando.
+                      00144 ; "LCD_Caracter". Escribe en la memoria DDRAM del LCD el car·cter ASCII introducido a
+                      00145 ; a travÈs del registro W. Trabaja en Modo Dato.
+                      00146 ;
+014F                  00147 LCD_EnviaComando
+014F   1009           00148         bcf     LCD_PinRS               ; Activa el Modo Comando, poniendo RS=0.
+0150   2953           00149         goto    LCD_Envia
+0151                  00150 LCD_Caracter
+0151   1409           00151         bsf     LCD_PinRS               ; Activa el "Modo Dato", poniendo RS=1.
+0152   215B           00152         call    LCD_CodigoCGROM ; Obtiene el cÛdigo para correcta visualizaciÛn.
+0153                  00153 LCD_Envia
+0153   00C8           00154         movwf   LCD_GuardaDato          ; Guarda el dato a enviar.
+0154   2122           00155         call    LCD_EscribeLCD          ; Primero envÌa el nibble alto.
+0155   0E48           00156         swapf   LCD_GuardaDato,W        ; Ahora envÌa el nibble bajo. Para ello pasa el
+                      00157                                         ; nibble bajo del dato a enviar a parte alta del byte.
+0156   2122           00158         call    LCD_EscribeLCD          ; Se envÌa al visualizador LCD.
+0157   1C09           00159         btfss   LCD_PinRS               ; Debe garantizar una correcta escritura manteniendo 
+0158   21B8           00160         call    Retardo_2ms             ; 2 ms en modo comando y 50 µs en modo c·racter.
+0159   21A4           00161         call    Retardo_50micros
+015A   0008           00162         return  
+                      00163 
+                      00164 ; Subrutina "LCD_CodigoCGROM" -----------------------------------------------------------
+                      00165 ;
+                      00166 ; A partir del car·cter ASCII n˙mero 127 los cÛdigos de los caracteres definidos en la
+                      00167 ; tabla CGROM del LM016L no coinciden con los cÛdigos ASCII. AsÌ por ejemplo, el cÛdigo
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 17
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00168 ; ASCII de la "—" en la tabla CGRAM del LM016L es EEh.
+                      00169 ;
+                      00170 ; Esta subrutina convierte los cÛdigos ASCII de la "—", "∫" y otros, a cÛdigos CGROM para que
+                      00171 ; que puedan ser visualizado en el mÛdulo LM016L.
+                      00172 ; 
+                      00173 ; Entrada:      En (W) el cÛdigo ASCII del car·cter que se desea visualizar.
+                      00174 ; Salida:       En (W) el cÛdigo definido en la tabla CGROM.
+                      00175 
+015B                  00176 LCD_CodigoCGROM
+015B   00C7           00177         movwf   LCD_Dato                ; Guarda el valor del car·cter y comprueba si es
+015C                  00178 LCD_EnheMinuscula                       ; un car·cter especial.
+015C   3CF1           00179         sublw   'Ò'                     ; øEs la "Ò"?
+015D   1D03           00180         btfss   STATUS,Z
+015E   2962           00181         goto    LCD_EnheMayuscula       ; No es "Ò".
+015F   30EE           00182         movlw   b'11101110'             ; CÛdigo CGROM de la "Ò".
+0160   00C7           00183         movwf   LCD_Dato
+0161   296F           00184         goto    LCD_FinCGROM
+0162                  00185 LCD_EnheMayuscula
+0162   0847           00186         movf    LCD_Dato,W              ; Recupera el cÛdigo ASCII de entrada.
+0163   3CD1           00187         sublw   '—'                     ; øEs la "—"?
+0164   1D03           00188         btfss   STATUS,Z
+0165   2969           00189         goto    LCD_Grado               ; No es "—".
+0166   30EE           00190         movlw   b'11101110'             ; CÛdigo CGROM de la "Ò". (No hay sÌmbolo para
+0167   00C7           00191         movwf   LCD_Dato                ; la "—" may˙scula en la CGROM).
+0168   296F           00192         goto    LCD_FinCGROM    
+0169                  00193 LCD_Grado
+0169   0847           00194         movf    LCD_Dato,W              ; Recupera el cÛdigo ASCII de entrada.
+016A   3CBA           00195         sublw   '∫'                     ; øEs el sÌmbolo "∫"?
+016B   1D03           00196         btfss   STATUS,Z
+016C   296F           00197         goto    LCD_FinCGROM            ; No es "∫".
+016D   30DF           00198         movlw   b'11011111'             ; CÛdigo CGROM del sÌmbolo "∫".
+016E   00C7           00199         movwf   LCD_Dato
+016F                  00200 LCD_FinCGROM
+016F   0847           00201         movf    LCD_Dato,W              ; En (W) el cÛdigo buscado.
+0170   0008           00202         return
+                      00203 
+                      00204 ; Subrutina "LCD_DosEspaciosBlancos" y "LCD_LineaBlanco" --------------------------------
+                      00205 ;
+                      00206 ; Visualiza espacios en blanco.
+                      00207 
+0171                  00208 LCD_LineaEnBlanco
+0171   3010           00209         movlw   LCD_CaracteresPorLinea
+0172   2978           00210         goto    LCD_EnviaBlancos
+0173                  00211 LCD_UnEspacioBlanco
+0173   3001           00212         movlw   .1
+0174   2978           00213         goto    LCD_EnviaBlancos
+0175                  00214 LCD_DosEspaciosBlancos
+0175   3002           00215         movlw   .2
+0176   2978           00216         goto    LCD_EnviaBlancos
+0177                  00217 LCD_TresEspaciosBlancos
+0177   3003           00218         movlw   .3
+0178                  00219 LCD_EnviaBlancos
+0178   00CA           00220         movwf   LCD_Auxiliar1           ; (LCD_Auxiliar1) se utiliza como contador.
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 18
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0179                  00221 LCD_EnviaOtroBlanco     
+0179   3020           00222         movlw   ' '                     ; Esto es un espacio en blanco.
+017A   2151           00223         call    LCD_Caracter            ; Visualiza tanto espacios en blanco como se
+017B   0BCA           00224         decfsz  LCD_Auxiliar1,F         ; haya cargado en (LCD_Auxiliar1).
+017C   2979           00225         goto    LCD_EnviaOtroBlanco
+017D   0008           00226         return
+                      00227 
+                      00228 ; Subrutinas "LCD_ByteCompleto" y "LCD_Byte" --------------------------------------------
+                      00229 ;
+                      00230 ; Subrutina "LCD_ByteCompleto", visualiza el byte que almacena el registro W en el
+                      00231 ; lugar actual de la pantalla. Por ejemplo, si (W)=b'10101110' visualiza "AE".
+                      00232 ;
+                      00233 ; Subrutina "LCD_Byte" igual que la anterior, pero en caso de que el nibble alto sea cero 
+                      00234 ; visualiza en su lugar un espacio en blanco. Por ejemplo si (W)=b'10101110' visualiza "AE"
+                      00235 ; y si (W)=b'00001110', visualiza " E" (un espacio blanco delante).
+                      00236 ;
+                      00237 ; Utilizan la subrutina "LCD_Nibble" que se analiza m·s adelante.
+                      00238 ;
+017E                  00239 LCD_Byte
+017E   00CB           00240         movwf   LCD_Auxiliar2           ; Guarda el valor de entrada.
+017F   39F0           00241         andlw   b'11110000'             ; Analiza si el nibble alto es cero.
+0180   1D03           00242         btfss   STATUS,Z                ; Si es cero lo apaga.
+0181   2986           00243         goto    LCD_VisualizaAlto               ; No es cero y lo visualiza.
+0182   3020           00244         movlw   0x20                    ; Visualiza un espacio en blanco.
+0183   2151           00245         call    LCD_Caracter
+0184   2988           00246         goto    LCD_VisualizaBajo
+                      00247 
+0185                  00248 LCD_ByteCompleto
+0185   00CB           00249         movwf   LCD_Auxiliar2           ; Guarda el valor de entrada.
+0186                  00250 LCD_VisualizaAlto
+0186   0E4B           00251         swapf   LCD_Auxiliar2,W         ; Pone el nibble alto en la parte baja.
+0187   2189           00252         call    LCD_Nibble              ; Lo visualiza.
+0188                  00253 LCD_VisualizaBajo
+0188   084B           00254         movf    LCD_Auxiliar2,W         ; Repite el proceso con el nibble bajo.
+                      00255 ;       call    LCD_Nibble              ; Lo visualiza.
+                      00256 ;       return
+                      00257 
+                      00258 ; Subrutina "LCD_Nibble" ----------------------------------------------------------------
+                      00259 ;
+                      00260 ; Visualiza en el lugar actual de la pantalla, el valor hexadecimal que almacena en el nibble
+                      00261 ; bajo del registro W. El nibble alto de W no es tenido en cuenta. Ejemplos:
+                      00262 ; - Si (W)=b'01010110', se visualizar· "6". 
+                      00263 ; - Si (W)=b'10101110', se visualizar· "E". 
+                      00264 ;
+0189                  00265 LCD_Nibble
+0189   390F           00266         andlw   b'00001111'             ; Se queda con la parte baja.
+018A   00CA           00267         movwf   LCD_Auxiliar1           ; Lo guarda.
+018B   3C09           00268         sublw   0x09                    ; Comprueba si hay que representarlo con letra.
+018C   1C03           00269         btfss   STATUS,C        
+018D   2991           00270         goto    LCD_EnviaByteLetra
+018E   084A           00271         movf    LCD_Auxiliar1,W
+018F   3E30           00272         addlw   0X30    ; ' '           ; El n˙mero se pasa a car·cter ASCII sum·ndole
+0190   2993           00273         goto    LCD_FinVisualizaDigito  ; el ASCII del cero y lo visualiza.
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 19
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0191                  00274 LCD_EnviaByteLetra
+0191   084A           00275         movf    LCD_Auxiliar1,W
+0192   3E37           00276         addlw   0x37    ;'a'            ; SÌ, por tanto, se le suma el ASCII de la 'A'.
+0193                  00277 LCD_FinVisualizaDigito
+0193   2951           00278         goto    LCD_Caracter            ; Y visualiza el car·cter. Se hace con un "goto"
+                      00279                                         ; para no sobrecargar la pila.
+                      00280                                         
+                      00281 ;       ===================================================================
+                      00282 ;         Del libro "MICROCONTROLADOR PIC16F84. DESARROLLO DE PROYECTOS"
+                      00283 ;         E. Palacios, F. Remiro y L. LÛpez.
+                      00284 ;         Editorial Ra-Ma.  www.ra-ma.es
+                      00285 ;       ===================================================================
+                      00210         INCLUDE <RETARDOS.INC> 
+                      00001 ;**************************** Librer√≠a "RETARDOS.INC" *********************************
+                      00002 ;
+                      00003 ;       ===================================================================
+                      00004 ;         Del libro "MICROCONTROLADOR PIC16F84. DESARROLLO DE PROYECTOS"
+                      00005 ;         E. Palacios, F. Remiro y L. L√≥pez.
+                      00006 ;         Editorial Ra-Ma.  www.ra-ma.es
+                      00007 ;       ===================================================================
+                      00008 ;
+                      00009 ; Librer√≠a con m√∫ltiples subrutinas de retardos, desde 4 microsegundos hasta 20 segundos. 
+                      00010 ; Adem√°s se pueden implementar otras subrutinas muy f√°cilmente.
+                      00011 ;
+                      00012 ; Se han calculado para un sistema microcontrolador con un PIC trabajando con un cristal
+                      00013 ; de cuarzo a 4 MHz. Como cada ciclo m√°quina son 4 ciclos de reloj, resulta que cada
+                      00014 ; ciclo m√°quina tarda 4 x 1/4MHz = 1 ¬µs.
+                      00015 ;
+                      00016 ; En los comentarios, "cm" significa "ciclos m√°quina".
+                      00017 ;
+                      00018 ; ZONA DE DATOS *********************************************************************
+                      00019 
+                      00020         CBLOCK
+  0000004C            00021         R_ContA                         ; Contadores para los retardos.
+  0000004D            00022         R_ContB
+  0000004E            00023         R_ContC
+                      00024         ENDC
+                      00025 ;
+                      00026 ; RETARDOS de 4 hasta 10 microsegundos ---------------------------------------------------
+                      00027 ;
+                      00028 ; A continuaci√≥n retardos peque√±os teniendo en cuenta que para una frecuencia de 4 MHZ,
+                      00029 ; la llamada a subrutina "call" tarda 2 ciclos m√°quina, el retorno de subrutina
+                      00030 ; "return" toma otros 2 ciclos m√°quina y cada instrucci√≥n "nop" tarda 1 ciclo m√°quina.
+                      00031 ;
+0194                  00032 Retardo_10micros                                ; La llamada "call" aporta 2 ciclos m√°quina.
+0194   0000           00033         nop                             ; Aporta 1 ciclo m√°quina.
+0195   0000           00034         nop                             ; Aporta 1 ciclo m√°quina.
+0196   0000           00035         nop                             ; Aporta 1 ciclo m√°quina.
+0197   0000           00036         nop                             ; Aporta 1 ciclo m√°quina.
+0198   0000           00037         nop                             ; Aporta 1 ciclo m√°quina.
+0199   0000           00038         nop                             ; Aporta 1 ciclo m√°quina.      
+019A                  00039 Retardo_5micros                         ; La llamada "call" aporta 2 ciclos m√°quina.
+019A   0000           00040         nop                             ; Aporta 1 ciclo m√°quina.
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 20
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+019B                  00041 Retardo_4micros                         ; La llamada "call" aporta 2 ciclos m√°quina.
+019B   0008           00042         return                          ; El salto del retorno aporta 2 ciclos m√°quina.
+                      00043 ;
+                      00044 ; RETARDOS de 20 hasta 500 microsegundos ------------------------------------------------
+                      00045 ;
+019C                  00046 Retardo_500micros                               ; La llamada "call" aporta 2 ciclos m√°quina.
+019C   0000           00047         nop                             ; Aporta 1 ciclo m√°quina.
+019D   30A4           00048         movlw   d'164'                  ; Aporta 1 ciclo m√°quina. Este es el valor de "K".
+019E   29A8           00049         goto    RetardoMicros           ; Aporta 2 ciclos m√°quina.
+019F                  00050 Retardo_200micros                               ; La llamada "call" aporta 2 ciclos m√°quina.
+019F   0000           00051         nop                             ; Aporta 1 ciclo m√°quina.
+01A0   3040           00052         movlw   d'64'                   ; Aporta 1 ciclo m√°quina. Este es el valor de "K".
+01A1   29A8           00053         goto    RetardoMicros           ; Aporta 2 ciclos m√°quina.
+01A2                  00054 Retardo_100micros                               ; La llamada "call" aporta 2 ciclos m√°quina.
+01A2   301F           00055         movlw   d'31'                   ; Aporta 1 ciclo m√°quina. Este es el valor de "K".
+01A3   29A8           00056         goto    RetardoMicros           ; Aporta 2 ciclos m√°quina.
+01A4                  00057 Retardo_50micros                                ; La llamada "call" aporta 2 ciclos m√°quina.
+01A4   0000           00058         nop                             ; Aporta 1 ciclo m√°quina.
+01A5   300E           00059         movlw   d'14'                   ; Aporta 1 ciclo m√°quina. Este es el valor de "K".
+01A6   29A8           00060         goto    RetardoMicros           ; Aporta 2 ciclos m√°quina.
+01A7                  00061 Retardo_20micros                                ; La llamada "call" aporta 2 ciclos m√°quina.
+01A7   3005           00062         movlw   d'5'                    ; Aporta 1 ciclo m√°quina. Este es el valor de "K".
+                      00063 ;
+                      00064 ; El pr√≥ximo bloque "RetardoMicros" tarda:
+                      00065 ; 1 + (K-1) + 2 + (K-1)x2 + 2 = (2 + 3K) ciclos m√°quina.
+                      00066 ;
+01A8                  00067 RetardoMicros
+01A8   00CC           00068         movwf   R_ContA                 ; Aporta 1 ciclo m√°quina.
+01A9                  00069 Rmicros_Bucle
+01A9   0BCC           00070         decfsz  R_ContA,F               ; (K-1)x1 cm (cuando no salta) + 2 cm (al saltar).
+01AA   29A9           00071         goto    Rmicros_Bucle           ; Aporta (K-1)x2 ciclos m√°quina.
+01AB   0008           00072         return                          ; El salto del retorno aporta 2 ciclos m√°quina.
+                      00073 ;
+                      00074 ;En total estas subrutinas tardan:
+                      00075 ; - Retardo_500micros:  2 + 1 + 1 + 2 + (2 + 3K) = 500 cm = 500 ¬µs. (para K=164 y 4 MHz).
+                      00076 ; - Retardo_200micros:  2 + 1 + 1 + 2 + (2 + 3K) = 200 cm = 200 ¬µs. (para K= 64 y 4 MHz).
+                      00077 ; - Retardo_100micros:  2     + 1 + 2 + (2 + 3K) = 100 cm = 100 ¬µs. (para K= 31 y 4 MHz).
+                      00078 ; - Retardo_50micros :  2 + 1 + 1 + 2 + (2 + 3K) =  50 cm =  50 ¬µs. (para K= 14 y 4 MHz).
+                      00079 ; - Retardo_20micros :  2     + 1     + (2 + 3K) =  20 cm =  20 ¬µs. (para K=  5 y 4 MHz).
+                      00080 ;
+                      00081 ; RETARDOS de 1 ms hasta 200 ms. --------------------------------------------------------
+                      00082 ;
+01AC                  00083 Retardo_200ms                           ; La llamada "call" aporta 2 ciclos m√°quina.
+01AC   30C8           00084         movlw   d'200'                  ; Aporta 1 ciclo m√°quina. Este es el valor de "M".
+01AD   29BB           00085         goto    Retardos_ms             ; Aporta 2 ciclos m√°quina.
+01AE                  00086 Retardo_100ms                           ; La llamada "call" aporta 2 ciclos m√°quina.
+01AE   3064           00087         movlw   d'100'                  ; Aporta 1 ciclo m√°quina. Este es el valor de "M".
+01AF   29BB           00088         goto    Retardos_ms             ; Aporta 2 ciclos m√°quina.
+01B0                  00089 Retardo_50ms                            ; La llamada "call" aporta 2 ciclos m√°quina.
+01B0   3032           00090         movlw   d'50'                   ; Aporta 1 ciclo m√°quina. Este es el valor de "M".
+01B1   29BB           00091         goto    Retardos_ms             ; Aporta 2 ciclos m√°quina.
+01B2                  00092 Retardo_20ms                            ; La llamada "call" aporta 2 ciclos m√°quina.
+01B2   3014           00093         movlw   d'20'                   ; Aporta 1 ciclo m√°quina. Este es el valor de "M".
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 21
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+01B3   29BB           00094         goto    Retardos_ms             ; Aporta 2 ciclos m√°quina.
+01B4                  00095 Retardo_10ms                            ; La llamada "call" aporta 2 ciclos m√°quina.
+01B4   300A           00096         movlw   d'10'                   ; Aporta 1 ciclo m√°quina. Este es el valor de "M".
+01B5   29BB           00097         goto    Retardos_ms             ; Aporta 2 ciclos m√°quina.
+01B6                  00098 Retardo_5ms                             ; La llamada "call" aporta 2 ciclos m√°quina.
+01B6   3005           00099         movlw   d'5'                    ; Aporta 1 ciclo m√°quina. Este es el valor de "M".
+01B7   29BB           00100         goto    Retardos_ms             ; Aporta 2 ciclos m√°quina.
+01B8                  00101 Retardo_2ms                             ; La llamada "call" aporta 2 ciclos m√°quina.
+01B8   3002           00102         movlw   d'2'                    ; Aporta 1 ciclo m√°quina. Este es el valor de "M".
+01B9   29BB           00103         goto    Retardos_ms             ; Aporta 2 ciclos m√°quina.
+01BA                  00104 Retardo_1ms                             ; La llamada "call" aporta 2 ciclos m√°quina.
+01BA   3001           00105         movlw   d'1'                    ; Aporta 1 ciclo m√°quina. Este es el valor de "M".
+                      00106 ;
+                      00107 ; El pr√≥ximo bloque "Retardos_ms" tarda:
+                      00108 ; 1 + M + M + KxM + (K-1)xM + Mx2 + (K-1)Mx2 + (M-1) + 2 + (M-1)x2 + 2 =
+                      00109 ; = (2 + 4M + 4KM) ciclos m√°quina. Para K=249 y M=1 supone 1002 ciclos m√°quina
+                      00110 ; que a 4 MHz son 1002 ¬µs = 1 ms.
+                      00111 ;
+01BB                  00112 Retardos_ms
+01BB   00CD           00113         movwf   R_ContB                 ; Aporta 1 ciclo m√°quina.
+01BC                  00114 R1ms_BucleExterno
+01BC   30F9           00115         movlw   d'249'                  ; Aporta Mx1 ciclos m√°quina. Este es el valor de "K".
+01BD   00CC           00116         movwf   R_ContA                 ; Aporta Mx1 ciclos m√°quina.
+01BE                  00117 R1ms_BucleInterno
+01BE   0000           00118         nop                             ; Aporta KxMx1 ciclos m√°quina.
+01BF   0BCC           00119         decfsz  R_ContA,F               ; (K-1)xMx1 cm (cuando no salta) + Mx2 cm (al saltar).
+01C0   29BE           00120         goto    R1ms_BucleInterno               ; Aporta (K-1)xMx2 ciclos m√°quina.
+01C1   0BCD           00121         decfsz  R_ContB,F               ; (M-1)x1 cm (cuando no salta) + 2 cm (al saltar).
+01C2   29BC           00122         goto    R1ms_BucleExterno       ; Aporta (M-1)x2 ciclos m√°quina.
+01C3   0008           00123         return                          ; El salto del retorno aporta 2 ciclos m√°quina.
+                      00124 ;
+                      00125 ;En total estas subrutinas tardan:
+                      00126 ; - Retardo_200ms:      2 + 1 + 2 + (2 + 4M + 4KM) = 200007 cm = 200 ms. (M=200 y K=249).
+                      00127 ; - Retardo_100ms:      2 + 1 + 2 + (2 + 4M + 4KM) = 100007 cm = 100 ms. (M=100 y K=249).
+                      00128 ; - Retardo_50ms :      2 + 1 + 2 + (2 + 4M + 4KM) =  50007 cm =  50 ms. (M= 50 y K=249).
+                      00129 ; - Retardo_20ms :      2 + 1 + 2 + (2 + 4M + 4KM) =  20007 cm =  20 ms. (M= 20 y K=249).
+                      00130 ; - Retardo_10ms :      2 + 1 + 2 + (2 + 4M + 4KM) =  10007 cm =  10 ms. (M= 10 y K=249).
+                      00131 ; - Retardo_5ms  :      2 + 1 + 2 + (2 + 4M + 4KM) =   5007 cm =   5 ms. (M=  5 y K=249).
+                      00132 ; - Retardo_2ms  :      2 + 1 + 2 + (2 + 4M + 4KM) =   2007 cm =   2 ms. (M=  2 y K=249).
+                      00133 ; - Retardo_1ms  :      2 + 1     + (2 + 4M + 4KM) =   1005 cm =   1 ms. (M=  1 y K=249).
+                      00134 ;
+                      00135 ; RETARDOS de 0.5 hasta 20 segundos ---------------------------------------------------
+                      00136 ;
+01C4                  00137 Retardo_20s                             ; La llamada "call" aporta 2 ciclos m√°quina.
+01C4   30C8           00138         movlw   d'200'                  ; Aporta 1 ciclo m√°quina. Este es el valor de "N".
+01C5   29CF           00139         goto    Retardo_1Decima         ; Aporta 2 ciclos m√°quina.
+01C6                  00140 Retardo_10s                             ; La llamada "call" aporta 2 ciclos m√°quina.
+01C6   3064           00141         movlw   d'100'                  ; Aporta 1 ciclo m√°quina. Este es el valor de "N".
+01C7   29CF           00142         goto    Retardo_1Decima         ; Aporta 2 ciclos m√°quina.
+01C8                  00143 Retardo_5s                              ; La llamada "call" aporta 2 ciclos m√°quina.
+01C8   3032           00144         movlw   d'50'                   ; Aporta 1 ciclo m√°quina. Este es el valor de "N".
+01C9   29CF           00145         goto    Retardo_1Decima         ; Aporta 2 ciclos m√°quina.
+01CA                  00146 Retardo_2s                              ; La llamada "call" aporta 2 ciclos m√°quina.
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 22
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+01CA   3014           00147         movlw   d'20'                   ; Aporta 1 ciclo m√°quina. Este es el valor de "N".
+01CB   29CF           00148         goto    Retardo_1Decima         ; Aporta 2 ciclos m√°quina.
+01CC                  00149 Retardo_1s                              ; La llamada "call" aporta 2 ciclos m√°quina.
+01CC   300A           00150         movlw   d'10'                   ; Aporta 1 ciclo m√°quina. Este es el valor de "N".
+01CD   29CF           00151         goto    Retardo_1Decima         ; Aporta 2 ciclos m√°quina.
+01CE                  00152 Retardo_500ms                           ; La llamada "call" aporta 2 ciclos m√°quina.
+01CE   3005           00153         movlw   d'5'                    ; Aporta 1 ciclo m√°quina. Este es el valor de "N".
+                      00154 ;
+                      00155 ; El pr√≥ximo bloque "Retardo_1Decima" tarda:
+                      00156 ; 1 + N + N + MxN + MxN + KxMxN + (K-1)xMxN + MxNx2 + (K-1)xMxNx2 +
+                      00157 ;   + (M-1)xN + Nx2 + (M-1)xNx2 + (N-1) + 2 + (N-1)x2 + 2 =
+                      00158 ; = (2 + 4M + 4MN + 4KM) ciclos m√°quina. Para K=249, M=100 y N=1 supone 100011
+                      00159 ; ciclos m√°quina que a 4 MHz son 100011 ¬µs = 100 ms = 0,1 s = 1 d√©cima de segundo.
+                      00160 ;
+01CF                  00161 Retardo_1Decima
+01CF   00CE           00162         movwf   R_ContC                 ; Aporta 1 ciclo m√°quina.
+01D0                  00163 R1Decima_BucleExterno2
+01D0   3064           00164         movlw   d'100'                  ; Aporta Nx1 ciclos m√°quina. Este es el valor de "M".
+01D1   00CD           00165         movwf   R_ContB                 ; Aporta Nx1 ciclos m√°quina.
+01D2                  00166 R1Decima_BucleExterno
+01D2   30F9           00167         movlw   d'249'                  ; Aporta MxNx1 ciclos m√°quina. Este es el valor de "K".
+01D3   00CC           00168         movwf   R_ContA                 ; Aporta MxNx1 ciclos m√°quina.
+01D4                  00169 R1Decima_BucleInterno          
+01D4   0000           00170         nop                             ; Aporta KxMxNx1 ciclos m√°quina.
+01D5   0BCC           00171         decfsz  R_ContA,F               ; (K-1)xMxNx1 cm (si no salta) + MxNx2 cm (al saltar).
+01D6   29D4           00172         goto    R1Decima_BucleInterno   ; Aporta (K-1)xMxNx2 ciclos m√°quina.
+01D7   0BCD           00173         decfsz  R_ContB,F               ; (M-1)xNx1 cm (cuando no salta) + Nx2 cm (al saltar).
+01D8   29D2           00174         goto    R1Decima_BucleExterno   ; Aporta (M-1)xNx2 ciclos m√°quina.
+01D9   0BCE           00175         decfsz  R_ContC,F               ; (N-1)x1 cm (cuando no salta) + 2 cm (al saltar).
+01DA   29D0           00176         goto    R1Decima_BucleExterno2  ; Aporta (N-1)x2 ciclos m√°quina.
+01DB   0008           00177         return                          ; El salto del retorno aporta 2 ciclos m√°quina.
+                      00178 ;
+                      00179 ;En total estas subrutinas tardan:
+                      00180 ; - Retardo_20s:        2 + 1 + 2 + (2 + 4N + 4MN + 4KMN) = 20000807 cm = 20 s.
+                      00181 ;                       (N=200, M=100 y K=249).
+                      00182 ; - Retardo_10s:        2 + 1 + 2 + (2 + 4N + 4MN + 4KMN) = 10000407 cm = 10 s.
+                      00183 ;                       (N=100, M=100 y K=249).
+                      00184 ; - Retardo_5s:         2 + 1 + 2 + (2 + 4N + 4MN + 4KMN) =  5000207 cm =  5 s.
+                      00185 ;                       (N= 50, M=100 y K=249).
+                      00186 ; - Retardo_2s:         2 + 1 + 2 + (2 + 4N + 4MN + 4KMN) =  2000087 cm =  2 s.
+                      00187 ;                       (N= 20, M=100 y K=249).
+                      00188 ; - Retardo_1s:         2 + 1 + 2 + (2 + 4N + 4MN + 4KMN) =  1000047 cm =  1 s.
+                      00189 ;                       (N= 10, M=100 y K=249).
+                      00190 ; - Retardo_500ms:      2 + 1     + (2 + 4N + 4MN + 4KMN) =   500025 cm = 0,5 s.
+                      00191 ;                       (N=  5, M=100 y K=249).
+                      00192 
+                      00193 ;       ===================================================================
+                      00194 ;         Del libro "MICROCONTROLADOR PIC16F84. DESARROLLO DE PROYECTOS"
+                      00195 ;         E. Palacios, F. Remiro y L. L√≥pez.
+                      00196 ;         Editorial Ra-Ma.  www.ra-ma.es
+                      00197 ;       =====================================================
+                      00211 ;-----------------------------------;Librerias
+Warning[205]: Found directive in column 1. (END)
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 23
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00212 END
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 24
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ACKDT                             00000005
+ACKEN                             00000004
+ACKSTAT                           00000006
+ADCON0                            0000001F
+ADCON1                            0000009F
+ADCS0                             00000006
+ADCS1                             00000007
+ADCS2                             00000006
+ADDEN                             00000003
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADRESH                            0000001E
+ADRESL                            0000009E
+AJUSTE_HUM                        00000055
+AJUSTE_TEMP                       0000004A
+Arit_Cociente_H                   00000035
+Arit_Cociente_L                   00000036
+Arit_ContadorBits                 00000032
+Arit_DivideBit16                  000000C0
+Arit_Divide_16Bit                 000000BB
+Arit_Dividendo_H                  00000033
+Arit_Dividendo_L                  00000034
+Arit_Divisor                      00000038
+Arit_Multiplica16Bit              000000AA
+Arit_MultiplicaBit8               0000009C
+Arit_Multiplica_16Bit             000000A4
+Arit_Multiplica_8Bit              00000097
+Arit_Multiplicador                0000002B
+Arit_Multiplicador_BitCero        000000B4
+Arit_Multiplicador_H              0000002D
+Arit_Multiplicador_L              0000002F
+Arit_Multiplicando                0000002A
+Arit_Multiplicando_H              0000002C
+Arit_Multiplicando_L              0000002E
+Arit_Operando_1H                  00000039
+Arit_Operando_1L                  0000003A
+Arit_Operando_2H                  0000003B
+Arit_Operando_2L                  0000003C
+Arit_Producto_1H                  0000003D
+Arit_Producto_1L                  0000003E
+Arit_Producto_2H                  0000003F
+Arit_Producto_2L                  00000040
+Arit_Producto_H                   00000031
+Arit_Producto_L                   00000030
+Arit_Resta_16Bit                  00000090
+Arit_Resto                        00000037
+Arit_Suma_16Bit                   00000090
+Auxiliar                          00000029
+BCD_Centenas                      00000041
+BCD_Decenas                       00000042
+BCD_IncrementaCentenas            000000DA
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 25
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+BCD_IncrementaDecenas             000000D4
+BCD_Resta10                       000000D0
+BCD_Unidades                      00000043
+BCLIE                             00000003
+BCLIF                             00000003
+BF                                00000000
+BIN_BCD_Fin                       000000DD
+BIN_a_BCD                         000000CD
+BRGH                              00000002
+C                                 00000000
+C1INV                             00000004
+C1OUT                             00000006
+C2INV                             00000005
+C2OUT                             00000007
+CALCULO_HUM                       0000004C
+CALCULO_TEMP                      00000041
+CCP1CON                           00000017
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1X                             00000005
+CCP1Y                             00000004
+CCP2CON                           0000001D
+CCP2IE                            00000000
+CCP2IF                            00000000
+CCP2M0                            00000000
+CCP2M1                            00000001
+CCP2M2                            00000002
+CCP2M3                            00000003
+CCP2X                             00000005
+CCP2Y                             00000004
+CCPR1                             00000015
+CCPR1H                            00000016
+CCPR1L                            00000015
+CCPR2                             0000001B
+CCPR2H                            0000001C
+CCPR2L                            0000001B
+CHS0                              00000003
+CHS1                              00000004
+CHS2                              00000005
+CIS                               00000003
+CKE                               00000006
+CKP                               00000004
+CM0                               00000000
+CM1                               00000001
+CM2                               00000002
+CMCON                             0000009C
+CMIE                              00000006
+CMIF                              00000006
+CONVERSION                        0000000C
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 26
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+CONVERSION_ADC                    00000061
+CREN                              00000004
+CSRC                              00000007
+CVR0                              00000000
+CVR1                              00000001
+CVR2                              00000002
+CVR3                              00000003
+CVRCON                            0000009D
+CVREN                             00000007
+CVROE                             00000006
+CVRR                              00000005
+D                                 00000005
+DATA_ADDRESS                      00000005
+DC                                00000001
+D_A                               00000005
+D_NOT_A                           00000005
+EEADR                             0000010D
+EEADRH                            0000010F
+EECON1                            0000018C
+EECON2                            0000018D
+EEDATA                            0000010C
+EEDATH                            0000010E
+EEIE                              00000004
+EEIF                              00000004
+EEPGD                             00000007
+F                                 00000001
+FERR                              00000002
+FSR                               00000004
+GCEN                              00000007
+GIE                               00000007
+GO                                00000002
+GO_DONE                           00000002
+GO_NOT_DONE                       00000002
+GUARDAR_HUM                       00000019
+GUARDAR_TEMP                      0000000E
+HUMFH                             00000027
+HUMFL                             00000028
+HUMH                              00000023
+HUML                              00000024
+I2C_DATA                          00000005
+I2C_READ                          00000002
+I2C_START                         00000003
+I2C_STOP                          00000004
+IBF                               00000007
+IBOV                              00000005
+INDF                              00000000
+INICIO                            00000002
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IRP                               00000007
+LCD_2Lineas4Bits5x7               0000014E
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 27
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+LCD_ApuntaCaracter                00000044
+LCD_Auxiliar1                     0000004A
+LCD_Auxiliar2                     0000004B
+LCD_Borra                         0000014C
+LCD_BusDatos                      PORTD
+LCD_Byte                          0000017E
+LCD_ByteCompleto                  00000185
+LCD_Caracter                      00000151
+LCD_CaracteresPorLinea            00000010
+LCD_CodigoCGROM                   0000015B
+LCD_CursorIncr                    00000138
+LCD_CursorOFF                     0000014A
+LCD_CursorON                      00000148
+LCD_CursorPosicion                00000046
+LCD_Dato                          00000047
+LCD_DosEspaciosBlancos            00000175
+LCD_EnheMayuscula                 00000162
+LCD_EnheMinuscula                 0000015C
+LCD_Envia                         00000153
+LCD_EnviaBlancos                  00000178
+LCD_EnviaByteLetra                00000191
+LCD_EnviaComando                  0000014F
+LCD_EnviaOtroBlanco               00000179
+LCD_EsFinalLinea                  000000F8
+LCD_EscribeLCD                    00000122
+LCD_FinCGROM                      0000016F
+LCD_FinMensaje                    000000ED
+LCD_FinMovimiento                 00000107
+LCD_FinVisualizaDigito            00000193
+LCD_Grado                         00000169
+LCD_GuardaDato                    00000048
+LCD_GuardaTRISD                   00000049
+LCD_Inicializa                    00000108
+LCD_Linea1                        0000013A
+LCD_Linea2                        0000013C
+LCD_LineaEnBlanco                 00000171
+LCD_Mensaje                       000000E0
+LCD_MensajeMovimiento             000000EE
+LCD_Nibble                        00000189
+LCD_NoEsFinalLinea                000000FD
+LCD_NoUltimoCaracter              000000EA
+LCD_NoUltimoCaracter2             00000103
+LCD_OFF                           00000146
+LCD_PinEnable                     PORTE,2
+LCD_PinRS                         PORTE,0
+LCD_PinRW                         PORTE,1
+LCD_PosicionLinea1                00000142
+LCD_PosicionLinea2                00000144
+LCD_PrimeraPosicion               000000F2
+LCD_TresEspaciosBlancos           00000177
+LCD_UnEspacioBlanco               00000173
+LCD_ValorCaracter                 00000045
+LCD_VisualizaAlto                 00000186
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 28
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+LCD_VisualizaBajo                 00000188
+LCD_VisualizaCaracter             000000F4
+LCD_VisualizaOtroCaracter         000000E4
+LIMPIA_REG                        00000087
+M0                                00000066
+M1                                00000074
+M2                                0000007E
+M3                                00000080
+Mensajes                          00000065
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BO                            00000000
+NOT_BOR                           00000000
+NOT_DONE                          00000002
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_RC8                           00000006
+NOT_T1SYNC                        00000002
+NOT_TO                            00000004
+NOT_TX8                           00000006
+NOT_W                             00000002
+NOT_WRITE                         00000002
+OBF                               00000006
+OERR                              00000001
+OPTION_REG                        00000081
+P                                 00000004
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+PCL                               00000002
+PCLATH                            0000000A
+PCON                              0000008E
+PEIE                              00000006
+PEN                               00000002
+PIE1                              0000008C
+PIE2                              0000008D
+PIR1                              0000000C
+PIR2                              0000000D
+PORTA                             00000005
+PORTB                             00000006
+PORTC                             00000007
+PORTD                             00000008
+PORTE                             00000009
+PR2                               00000092
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PSA                               00000003
+PSPIE                             00000007
+PSPIF                             00000007
+PSPMODE                           00000004
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 29
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+R                                 00000002
+R1Decima_BucleExterno             000001D2
+R1Decima_BucleExterno2            000001D0
+R1Decima_BucleInterno             000001D4
+R1ms_BucleExterno                 000001BC
+R1ms_BucleInterno                 000001BE
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RC0                               00000000
+RC1                               00000001
+RC2                               00000002
+RC3                               00000003
+RC4                               00000004
+RC5                               00000005
+RC6                               00000006
+RC7                               00000007
+RC8_9                             00000006
+RC9                               00000006
+RCD8                              00000000
+RCEN                              00000003
+RCIE                              00000005
+RCIF                              00000005
+RCREG                             0000001A
+RCSTA                             00000018
+RD                                00000000
+RD0                               00000000
+RD1                               00000001
+RD2                               00000002
+RD3                               00000003
+RD4                               00000004
+RD5                               00000005
+RD6                               00000006
+RD7                               00000007
+RE0                               00000000
+RE1                               00000001
+RE2                               00000002
+READ_WRITE                        00000002
+REAJUSTE_HUM                      0000005C
+REAJUSTE_TEMP                     00000057
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 30
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+RETARDO_CARGA                     00000082
+RP0                               00000005
+RP1                               00000006
+RSEN                              00000001
+RX9                               00000006
+RX9D                              00000000
+R_ContA                           0000004C
+R_ContB                           0000004D
+R_ContC                           0000004E
+R_NOT_W                           00000002
+R_W                               00000002
+Retardo                           00000084
+RetardoMicros                     000001A8
+Retardo_100micros                 000001A2
+Retardo_100ms                     000001AE
+Retardo_10micros                  00000194
+Retardo_10ms                      000001B4
+Retardo_10s                       000001C6
+Retardo_1Decima                   000001CF
+Retardo_1ms                       000001BA
+Retardo_1s                        000001CC
+Retardo_200micros                 0000019F
+Retardo_200ms                     000001AC
+Retardo_20micros                  000001A7
+Retardo_20ms                      000001B2
+Retardo_20s                       000001C4
+Retardo_2ms                       000001B8
+Retardo_2s                        000001CA
+Retardo_4micros                   0000019B
+Retardo_500micros                 0000019C
+Retardo_500ms                     000001CE
+Retardo_50micros                  000001A4
+Retardo_50ms                      000001B0
+Retardo_5micros                   0000019A
+Retardo_5ms                       000001B6
+Retardo_5s                        000001C8
+Retardoini                        00000020
+Retardos_ms                       000001BB
+Rmicros_Bucle                     000001A9
+S                                 00000003
+SEN                               00000000
+SMP                               00000007
+SPBRG                             00000099
+SPEN                              00000007
+SREN                              00000005
+SSPADD                            00000093
+SSPBUF                            00000013
+SSPCON                            00000014
+SSPCON2                           00000091
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPM0                             00000000
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 31
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000094
+STATUS                            00000003
+SYNC                              00000004
+T0CS                              00000005
+T0IE                              00000005
+T0IF                              00000002
+T0SE                              00000004
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000010
+T1INSYNC                          00000002
+T1OSCEN                           00000003
+T1SYNC                            00000002
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000012
+TEMPFH                            00000026
+TEMPFL                            00000025
+TEMPH                             00000022
+TEMPL                             00000021
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR1CS                            00000001
+TMR1H                             0000000F
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1L                             0000000E
+TMR1ON                            00000000
+TMR2                              00000011
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ON                            00000002
+TOUTPS0                           00000003
+TOUTPS1                           00000004
+TOUTPS2                           00000005
+TOUTPS3                           00000006
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISB                             00000086
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 32
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TRISC                             00000087
+TRISC0                            00000000
+TRISC1                            00000001
+TRISC2                            00000002
+TRISC3                            00000003
+TRISC4                            00000004
+TRISC5                            00000005
+TRISC6                            00000006
+TRISC7                            00000007
+TRISD                             00000088
+TRISD0                            00000000
+TRISD1                            00000001
+TRISD2                            00000002
+TRISD3                            00000003
+TRISD4                            00000004
+TRISD5                            00000005
+TRISD6                            00000006
+TRISD7                            00000007
+TRISE                             00000089
+TRISE0                            00000000
+TRISE1                            00000001
+TRISE2                            00000002
+TRMT                              00000001
+TX8_9                             00000006
+TX9                               00000006
+TX9D                              00000000
+TXD8                              00000000
+TXEN                              00000005
+TXIE                              00000004
+TXIF                              00000004
+TXREG                             00000019
+TXSTA                             00000098
+UA                                00000001
+VISUALIZAR_DATOS                  00000023
+W                                 00000000
+WCOL                              00000007
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+Z                                 00000002
+_BODEN_OFF                        00003FBF
+_BODEN_ON                         00003FFF
+_CONFIG                           00002007
+_CPD_OFF                          00003FFF
+_CPD_ON                           00003EFF
+_CP_ALL                           00001FFF
+_CP_OFF                           00003FFF
+_DEBUG_OFF                        00003FFF
+_DEBUG_ON                         000037FF
+MPASM  5.39                INVERNADERO_V1.ASM   6-15-2024  3:40:10         PAGE 33
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_DEVID1                           00002006
+_HS_OSC                           00003FFE
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_LP_OSC                           00003FFC
+_LVP_OFF                          00003F7F
+_LVP_ON                           00003FFF
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FF7
+_RC_OSC                           00003FFF
+_WDT_OFF                          00003FFB
+_WDT_ON                           00003FFF
+_WRT_1FOURTH                      00003BFF
+_WRT_256                          00003DFF
+_WRT_HALF                         000039FF
+_WRT_OFF                          00003FFF
+_XT_OSC                           00003FFD
+__16F877A                         00000001
+
+
+MEMORY USAGE MAP ('X' = Used,  '-' = Unused)
+
+0000 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0040 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0080 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+00C0 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0100 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0140 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+0180 : XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX XXXXXXXXXXXXXXXX
+01C0 : XXXXXXXXXXXXXXXX XXXXXXXXXXXX---- ---------------- ----------------
+2000 : -------X-------- ---------------- ---------------- ----------------
+
+All other memory blocks unused.
+
+Program Memory Words Used:   476
+Program Memory Words Free:  7716
+
+
+Errors   :     0
+Warnings :    17 reported,     0 suppressed
+Messages :    11 reported,     0 suppressed
+
+

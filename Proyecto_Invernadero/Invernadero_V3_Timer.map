@@ -1,0 +1,278 @@
+MPLINK 4.38, Linker
+Linker Map File - Created Tue Jun 18 17:36:47 2024
+
+                                 Section Info
+                  Section       Type    Address   Location Size(Bytes)
+                ---------  ---------  ---------  ---------  ---------
+                   .org_0       code   0x000000    program   0x000000
+                   .org_1       code   0x000000    program   0x000002
+                   .org_2       code   0x000004    program   0x00049a
+.config_2007_INVERNADERO_V3_TIMER.O       code   0x002007    program   0x000002
+
+
+
+                              Program Memory Usage 
+                               Start         End      
+                           ---------   ---------      
+                            0x000000    0x000000      
+                            0x000004    0x000250      
+                            0x002007    0x002007      
+            591 out of 8454 program addresses used, program memory utilization is 6%
+
+
+
+                              Symbols - Sorted by Name
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                   AJUSTE   0x00007a    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+               AJUSTE_HUM   0x00007d    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+           ActualizaReloj   0x0000cd    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+         Arit_DivideBit16   0x000135    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+        Arit_Divide_16Bit   0x000130    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+     Arit_Multiplica16Bit   0x00011f    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+      Arit_MultiplicaBit8   0x000111    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+    Arit_Multiplica_16Bit   0x000119    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+     Arit_Multiplica_8Bit   0x00010c    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+Arit_Multiplicador_BitCero   0x000129    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+               Arit_Negar   0x0000fc    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+         Arit_Resta_16Bit   0x000104    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+          Arit_Suma_16Bit   0x000105    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+   BCD_IncrementaCentenas   0x00014f    program     static C:\Program Files (x86)\Microchip\MPASM Suite\BIN_BCD.INC
+    BCD_IncrementaDecenas   0x000149    program     static C:\Program Files (x86)\Microchip\MPASM Suite\BIN_BCD.INC
+              BCD_Resta10   0x000145    program     static C:\Program Files (x86)\Microchip\MPASM Suite\BIN_BCD.INC
+              BIN_BCD_Fin   0x000152    program     static C:\Program Files (x86)\Microchip\MPASM Suite\BIN_BCD.INC
+                BIN_a_BCD   0x000142    program     static C:\Program Files (x86)\Microchip\MPASM Suite\BIN_BCD.INC
+              CALCULO_HUM   0x000069    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+             CALCULO_TEMP   0x00005a    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+               CONVERSION   0x000023    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+           CONVERSION_ADC   0x00008b    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+          FinInterrupcion   0x000021    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                 FinReloj   0x0000ce    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+              GUARDAR_HUM   0x000031    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+             GUARDAR_TEMP   0x000026    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                   INICIO   0x000005    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                   INTTM0   0x00001d    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+          IncrementaHoras   0x0000f6    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+   IncrementaMedioSegundo   0x0000e5    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+        IncrementaMinutos   0x0000f0    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+   IncrementaRegistro50ms   0x0000df    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+          IncrementaReloj   0x0000c3    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+       IncrementaSegundos   0x0000ea    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+      LCD_2Lineas4Bits5x7   0x0001c3    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+                LCD_Borra   0x0001c1    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+                 LCD_Byte   0x0001f3    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+         LCD_ByteCompleto   0x0001fa    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+             LCD_Caracter   0x0001c6    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+          LCD_CodigoCGROM   0x0001d0    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+           LCD_CursorIncr   0x0001ad    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+            LCD_CursorOFF   0x0001bf    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+             LCD_CursorON   0x0001bd    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+   LCD_DosEspaciosBlancos   0x0001ea    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+        LCD_EnheMayuscula   0x0001d7    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+        LCD_EnheMinuscula   0x0001d1    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+                LCD_Envia   0x0001c8    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+         LCD_EnviaBlancos   0x0001ed    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+       LCD_EnviaByteLetra   0x000206    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+         LCD_EnviaComando   0x0001c4    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+      LCD_EnviaOtroBlanco   0x0001ee    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+         LCD_EsFinalLinea   0x00016d    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+           LCD_EscribeLCD   0x000197    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+             LCD_FinCGROM   0x0001e4    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+           LCD_FinMensaje   0x000162    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+        LCD_FinMovimiento   0x00017c    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+   LCD_FinVisualizaDigito   0x000208    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+                LCD_Grado   0x0001de    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+           LCD_Inicializa   0x00017d    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+               LCD_Linea1   0x0001af    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+               LCD_Linea2   0x0001b1    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+        LCD_LineaEnBlanco   0x0001e6    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+              LCD_Mensaje   0x000155    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+    LCD_MensajeMovimiento   0x000163    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+               LCD_Nibble   0x0001fe    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+       LCD_NoEsFinalLinea   0x000172    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+     LCD_NoUltimoCaracter   0x00015f    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+    LCD_NoUltimoCaracter2   0x000178    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+                  LCD_OFF   0x0001bb    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+       LCD_PosicionLinea1   0x0001b7    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+       LCD_PosicionLinea2   0x0001b9    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+      LCD_PrimeraPosicion   0x000167    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+  LCD_TresEspaciosBlancos   0x0001ec    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+      LCD_UnEspacioBlanco   0x0001e8    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+        LCD_VisualizaAlto   0x0001fb    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+        LCD_VisualizaBajo   0x0001fd    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+    LCD_VisualizaCaracter   0x000169    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+LCD_VisualizaOtroCaracter   0x000159    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+               LIMPIA_REG   0x0000b1    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                       M0   0x000090    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                       M1   0x00009e    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                       M2   0x0000a8    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                       M3   0x0000aa    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                 Mensajes   0x00008f    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                PRINCIPAL   0x00001c    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+    R1Decima_BucleExterno   0x000247    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+   R1Decima_BucleExterno2   0x000245    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+    R1Decima_BucleInterno   0x000249    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+        R1ms_BucleExterno   0x000231    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+        R1ms_BucleInterno   0x000233    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+                RESULTADO   0x000086    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+            RETARDO_CARGA   0x0000ac    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                    Reloj   0x0000ba    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                  Retardo   0x0000ae    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+            RetardoMicros   0x00021d    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+        Retardo_100micros   0x000217    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+            Retardo_100ms   0x000223    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+         Retardo_10micros   0x000209    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+             Retardo_10ms   0x000229    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+              Retardo_10s   0x00023b    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+          Retardo_1Decima   0x000244    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+              Retardo_1ms   0x00022f    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+               Retardo_1s   0x000241    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+        Retardo_200micros   0x000214    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+            Retardo_200ms   0x000221    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+         Retardo_20micros   0x00021c    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+             Retardo_20ms   0x000227    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+              Retardo_20s   0x000239    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+              Retardo_2ms   0x00022d    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+               Retardo_2s   0x00023f    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+          Retardo_4micros   0x000210    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+        Retardo_500micros   0x000211    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+            Retardo_500ms   0x000243    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+         Retardo_50micros   0x000219    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+             Retardo_50ms   0x000225    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+          Retardo_5micros   0x00020f    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+              Retardo_5ms   0x00022b    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+               Retardo_5s   0x00023d    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+              Retardos_ms   0x000230    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+            Rmicros_Bucle   0x00021e    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+         VISUALIZAR_DATOS   0x00003b    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+           VisualizaReloj   0x0000cf    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+
+
+
+                              Symbols - Sorted by Address
+                     Name    Address   Location    Storage File                     
+                ---------  ---------  ---------  --------- ---------                
+                   INICIO   0x000005    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                PRINCIPAL   0x00001c    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                   INTTM0   0x00001d    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+          FinInterrupcion   0x000021    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+               CONVERSION   0x000023    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+             GUARDAR_TEMP   0x000026    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+              GUARDAR_HUM   0x000031    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+         VISUALIZAR_DATOS   0x00003b    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+             CALCULO_TEMP   0x00005a    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+              CALCULO_HUM   0x000069    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                   AJUSTE   0x00007a    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+               AJUSTE_HUM   0x00007d    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                RESULTADO   0x000086    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+           CONVERSION_ADC   0x00008b    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                 Mensajes   0x00008f    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                       M0   0x000090    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                       M1   0x00009e    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                       M2   0x0000a8    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                       M3   0x0000aa    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+            RETARDO_CARGA   0x0000ac    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                  Retardo   0x0000ae    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+               LIMPIA_REG   0x0000b1    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                    Reloj   0x0000ba    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+          IncrementaReloj   0x0000c3    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+           ActualizaReloj   0x0000cd    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+                 FinReloj   0x0000ce    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+           VisualizaReloj   0x0000cf    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+   IncrementaRegistro50ms   0x0000df    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+   IncrementaMedioSegundo   0x0000e5    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+       IncrementaSegundos   0x0000ea    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+        IncrementaMinutos   0x0000f0    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+          IncrementaHoras   0x0000f6    program     static D:\UV\VI Semestre\Micros_Actualizado\Proyecto_Invernadero\Invernadero_V3_Timer.asm
+               Arit_Negar   0x0000fc    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+         Arit_Resta_16Bit   0x000104    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+          Arit_Suma_16Bit   0x000105    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+     Arit_Multiplica_8Bit   0x00010c    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+      Arit_MultiplicaBit8   0x000111    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+    Arit_Multiplica_16Bit   0x000119    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+     Arit_Multiplica16Bit   0x00011f    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+Arit_Multiplicador_BitCero   0x000129    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+        Arit_Divide_16Bit   0x000130    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+         Arit_DivideBit16   0x000135    program     static C:\Program Files (x86)\Microchip\MPASM Suite\ARIT.INC
+                BIN_a_BCD   0x000142    program     static C:\Program Files (x86)\Microchip\MPASM Suite\BIN_BCD.INC
+              BCD_Resta10   0x000145    program     static C:\Program Files (x86)\Microchip\MPASM Suite\BIN_BCD.INC
+    BCD_IncrementaDecenas   0x000149    program     static C:\Program Files (x86)\Microchip\MPASM Suite\BIN_BCD.INC
+   BCD_IncrementaCentenas   0x00014f    program     static C:\Program Files (x86)\Microchip\MPASM Suite\BIN_BCD.INC
+              BIN_BCD_Fin   0x000152    program     static C:\Program Files (x86)\Microchip\MPASM Suite\BIN_BCD.INC
+              LCD_Mensaje   0x000155    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+LCD_VisualizaOtroCaracter   0x000159    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+     LCD_NoUltimoCaracter   0x00015f    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+           LCD_FinMensaje   0x000162    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+    LCD_MensajeMovimiento   0x000163    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+      LCD_PrimeraPosicion   0x000167    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+    LCD_VisualizaCaracter   0x000169    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+         LCD_EsFinalLinea   0x00016d    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+       LCD_NoEsFinalLinea   0x000172    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+    LCD_NoUltimoCaracter2   0x000178    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+        LCD_FinMovimiento   0x00017c    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_MENS.INC
+           LCD_Inicializa   0x00017d    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+           LCD_EscribeLCD   0x000197    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+           LCD_CursorIncr   0x0001ad    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+               LCD_Linea1   0x0001af    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+               LCD_Linea2   0x0001b1    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+       LCD_PosicionLinea1   0x0001b7    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+       LCD_PosicionLinea2   0x0001b9    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+                  LCD_OFF   0x0001bb    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+             LCD_CursorON   0x0001bd    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+            LCD_CursorOFF   0x0001bf    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+                LCD_Borra   0x0001c1    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+      LCD_2Lineas4Bits5x7   0x0001c3    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+         LCD_EnviaComando   0x0001c4    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+             LCD_Caracter   0x0001c6    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+                LCD_Envia   0x0001c8    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+          LCD_CodigoCGROM   0x0001d0    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+        LCD_EnheMinuscula   0x0001d1    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+        LCD_EnheMayuscula   0x0001d7    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+                LCD_Grado   0x0001de    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+             LCD_FinCGROM   0x0001e4    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+        LCD_LineaEnBlanco   0x0001e6    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+      LCD_UnEspacioBlanco   0x0001e8    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+   LCD_DosEspaciosBlancos   0x0001ea    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+  LCD_TresEspaciosBlancos   0x0001ec    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+         LCD_EnviaBlancos   0x0001ed    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+      LCD_EnviaOtroBlanco   0x0001ee    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+                 LCD_Byte   0x0001f3    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+         LCD_ByteCompleto   0x0001fa    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+        LCD_VisualizaAlto   0x0001fb    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+        LCD_VisualizaBajo   0x0001fd    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+               LCD_Nibble   0x0001fe    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+       LCD_EnviaByteLetra   0x000206    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+   LCD_FinVisualizaDigito   0x000208    program     static C:\Program Files (x86)\Microchip\MPASM Suite\LCD_4BIT_16F877_D_E.INC
+         Retardo_10micros   0x000209    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+          Retardo_5micros   0x00020f    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+          Retardo_4micros   0x000210    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+        Retardo_500micros   0x000211    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+        Retardo_200micros   0x000214    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+        Retardo_100micros   0x000217    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+         Retardo_50micros   0x000219    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+         Retardo_20micros   0x00021c    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+            RetardoMicros   0x00021d    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+            Rmicros_Bucle   0x00021e    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+            Retardo_200ms   0x000221    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+            Retardo_100ms   0x000223    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+             Retardo_50ms   0x000225    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+             Retardo_20ms   0x000227    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+             Retardo_10ms   0x000229    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+              Retardo_5ms   0x00022b    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+              Retardo_2ms   0x00022d    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+              Retardo_1ms   0x00022f    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+              Retardos_ms   0x000230    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+        R1ms_BucleExterno   0x000231    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+        R1ms_BucleInterno   0x000233    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+              Retardo_20s   0x000239    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+              Retardo_10s   0x00023b    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+               Retardo_5s   0x00023d    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+               Retardo_2s   0x00023f    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+               Retardo_1s   0x000241    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+            Retardo_500ms   0x000243    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+          Retardo_1Decima   0x000244    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+   R1Decima_BucleExterno2   0x000245    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+    R1Decima_BucleExterno   0x000247    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+    R1Decima_BucleInterno   0x000249    program     static C:\Program Files (x86)\Microchip\MPASM Suite\RETARDOS.INC
+
+
